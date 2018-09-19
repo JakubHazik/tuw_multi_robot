@@ -304,11 +304,16 @@ bool Router_Node::preparePlanning ( std::vector<float> &_radius, std::vector<Eig
     _goals.clear();
     _radius.clear();
 
+    std::vector<std::string> active_robots_name;
+    for ( int k = 0; k < goal_msg.robots.size(); k++ ) {
+      active_robots_name.push_back(goal_msg.robots[k].robot_name);
+    }   
+
     for ( int k = 0; k < goal_msg.robots.size(); k++ ) {
         const tuw_multi_robot_msgs::RobotGoals &route_request = goal_msg.robots[k];
         RobotInfoPtrIterator active_robot = RobotInfo::findObj ( subscribed_robots_, route_request.robot_name );
         if ( active_robot == subscribed_robots_.end() ) {
-            ROS_INFO ( "No robot subsribed with the name: %s", route_request.robot_name.c_str() );
+            ROS_INFO ( "No robot subscribed with the name: %s", route_request.robot_name.c_str() );
         } else {
             if ( route_request.destinations.empty() ) {
                 ROS_INFO ( "No robot: %s has not goal defined", route_request.robot_name.c_str() );
@@ -331,10 +336,13 @@ bool Router_Node::preparePlanning ( std::vector<float> &_radius, std::vector<Eig
 
         }
     }
+
+
     robot_names.resize ( active_robots_.size() );
     for ( size_t i=0; i < active_robots_.size(); i++ ) {
         robot_names[i] = active_robots_[i]->robot_name;
     }
+
     return retval;
 }
 
