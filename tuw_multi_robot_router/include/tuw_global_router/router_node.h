@@ -66,6 +66,11 @@ public:
      * @brief publishes a RoutingTable
      */
     void publish();
+    
+    /**
+     * @brief monitors the execution
+     */
+    void monitorExecution();
     /**
      * @brief used to update the nodes timeout to latch topics
      * @param secs the seconds passed since the last update
@@ -75,27 +80,14 @@ public:
     ros::NodeHandle n_param_; ///< Node handler to the current node
 
 private:
-    class TopicStatus
-    {
-    public:
-        enum class status
-        {
-            inactive,
-            active,
-            fixed
-        };
-        TopicStatus();
-        TopicStatus ( status _status, const float _activeTime = 1.0 );
-        void setStatus ( status _status, const float _activeTime = 1.0 );
-        status getStatus() const;
-        void updateStatus ( const float _updateTime );
+    //these 3 members are for time logging
+    int attempts_total_;
+    int attempts_successful_;
+    double sum_processing_time_total_;
+    double sum_processing_time_successful_;
+    
+    ros::Time time_first_robot_started_;
 
-    private:
-        status status_;
-        float activeTime_;
-    };
-    
-    
     tuw_multi_robot_msgs::RouterStatus mrrp_status_;
 
     dynamic_reconfigure::Server<tuw_multi_robot_router::routerConfig> param_server;
@@ -111,8 +103,8 @@ private:
 
     std::vector<RobotInfoPtr> subscribed_robots_;       /// robots avaliable
     std::vector<RobotInfoPtr> active_robots_;           /// robots currently used by the planner
+    std::map<std::string, double> finished_robots_;     /// robots finished with execution time
     std::vector<std::string> missing_robots_;
-    std::map<std::string, std::pair<TopicStatus, Eigen::Vector3d>> robot_starts_;
     float robot_radius_max_;
     cv::Mat distMap_;
     Eigen::Vector2d mapOrigin_;
@@ -126,6 +118,7 @@ private:
     std::string voronoi_topic_;
     std::string planner_status_topic_;
     std::string singleRobotGoalTopic_;
+    bool publish_routing_table_;
     bool got_map_ = false;
     bool got_graph_ = false;
     std::vector<Segment> graph_;
@@ -135,7 +128,8 @@ private:
     float topic_timeout_s_ = 10;
     bool freshPlan_ = false;
     std::string singleRobotName_ = "";
-
+    bool monitor_enabled_;
+    
     void parametersCallback ( tuw_multi_robot_router::routerConfig &config, uint32_t level );
     void odomCallback ( const ros::MessageEvent<nav_msgs::Odometry const> &_event, int _topic );
     void graphCallback ( const tuw_multi_robot_msgs::Graph &msg );

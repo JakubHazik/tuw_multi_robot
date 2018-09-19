@@ -58,6 +58,7 @@ LocalMultiRobotControllerNode::LocalMultiRobotControllerNode(ros::NodeHandle &n)
     }
 
     controller.resize(robot_names_.size());
+    active_robots.resize(robot_names_.size(),false);
     pubCmdVel_.resize(robot_names_.size());
     subCtrl_.resize(robot_names_.size());
     subOdom_.resize(robot_names_.size());
@@ -162,6 +163,15 @@ void velocity_controller::LocalMultiRobotControllerNode::subOdomCb(const ros::Me
 
     float delta_t = d.sec + NSEC_2_SECS(d.nsec);
     controller[_topic].update(pt, delta_t);
+    if (controller[_topic].getPlanActive())
+    {
+      active_robots[_topic] = true;
+    }
+    if (!controller[_topic].getPlanActive() && active_robots[_topic])
+    {
+      nr_of_finished_++;
+      active_robots[_topic] = false;
+    }
 
     geometry_msgs::Twist msg;
 
@@ -267,7 +277,12 @@ void LocalMultiRobotControllerNode::publishRobotInfo()
         ri.sync.robot_id = robot_names_[i];
         ri.sync.current_route_segment = controller[i].getCount();
         ri.mode = ri.MODE_NA;
-        ri.status = ri.STATUS_STOPPED; //TODO
+        if (active_robots[i])
+        {
+          ri.status = ri.STATUS_DRIVING; //TODO other statuses
+        } else {
+          ri.status = ri.STATUS_STOPPED;
+        }
         ri.good_id = ri.GOOD_NA;
 
         pubRobotInfo_.publish(ri);
