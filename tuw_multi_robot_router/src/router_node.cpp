@@ -309,32 +309,41 @@ bool Router_Node::preparePlanning ( std::vector<float> &_radius, std::vector<Eig
       active_robots_name.push_back(goal_msg.robots[k].robot_name);
     }   
 
-    for ( int k = 0; k < goal_msg.robots.size(); k++ ) {
-        const tuw_multi_robot_msgs::RobotGoals &route_request = goal_msg.robots[k];
-        RobotInfoPtrIterator active_robot = RobotInfo::findObj ( subscribed_robots_, route_request.robot_name );
-        if ( active_robot == subscribed_robots_.end() ) {
-            ROS_INFO ( "No robot subscribed with the name: %s", route_request.robot_name.c_str() );
-        } else {
-            if ( route_request.destinations.empty() ) {
-                ROS_INFO ( "No robot: %s has not goal defined", route_request.robot_name.c_str() );
-                continue;
+    for ( int k = 0; k < subscribed_robots_.size(); k++ ) {
+        RobotInfoPtrIterator active_robot = RobotInfo::findObj ( subscribed_robots_, subscribed_robots_[k]->robot_name );
+        auto active_goal=goal_msg.robots.end();
+        // For each robot, if there is a new goal for it, then use it
+        for(auto it=goal_msg.robots.begin();it!=goal_msg.robots.end();it++) {
+          if(!subscribed_robots_[k]->robot_name.compare(it->robot_name) ) {
+            active_goal=it; 
+          }
+        }
+
+
+        if (active_goal!=goal_msg.robots.end()) {
+            const tuw_multi_robot_msgs::RobotGoals &route_request = *active_goal;
+            active_robots_.push_back ( *active_robot );
+
+            _radius.push_back ( ( *active_robot )->radius() );
+            if ( route_request.destinations.size() > 1 ) {
+                geometry_msgs::Pose p = route_request.destinations[0];
+                _starts.push_back ( Eigen::Vector3d ( p.position.x, p.position.y, getYaw ( p.orientation ) ) );
             } else {
-
-                active_robots_.push_back ( *active_robot );
-
-                _radius.push_back ( ( *active_robot )->radius() );
-                if ( route_request.destinations.size() > 1 ) {
-                    geometry_msgs::Pose p = route_request.destinations[0];
-                    _starts.push_back ( Eigen::Vector3d ( p.position.x, p.position.y, getYaw ( p.orientation ) ) );
-                } else {
-                    _starts.push_back ( ( *active_robot )->getPose() );
-                }
-
-                geometry_msgs::Pose p = route_request.destinations.back();
-                _goals.push_back ( Eigen::Vector3d ( p.position.x, p.position.y, getYaw ( p.orientation ) ) );
+                _starts.push_back ( ( *active_robot )->getPose() );
             }
 
+            geometry_msgs::Pose p = route_request.destinations.back();
+            _goals.push_back ( Eigen::Vector3d ( p.position.x, p.position.y, getYaw ( p.orientation ) ) );
+        } else {
+            // If the robot has no new goal, then just assign same start and goal position
+            active_robots_.push_back ( *active_robot );
+            _radius.push_back ( ( *active_robot )->radius() );
+            _starts.push_back ( ( *active_robot )->getPose() );
+            _goals.push_back ( ( *active_robot )->getPose() );
+            continue;
+
         }
+    
     }
 
 
