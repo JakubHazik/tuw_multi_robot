@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+
+<launch>
+<arg name="nr_of_robots" default="1"/> 
+<arg name="robot_name_prefix" default="robot_"/>
+      
+<!-- reduce the loop counter "nr_of_robots-1" = robot_id -->
+<arg name="robot_id" value="$(eval arg('nr_of_robots') - 1)"/>
+
+<!-- launch the controller -->
+<include file="$(find tuw_multi_robot_demo)/launch/local_controller.launch">
+    <arg name="robot_name" value="robot_5" />
+</include>
+  
+</launch>

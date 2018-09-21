@@ -1,0 +1,33 @@
+header: 
+  seq: 0
+  stamp: 
+    secs: 1536762589
+    nsecs: 289132696
+  frame_id: "map"
+robots: 
+  - 
+    robot_name: "robot_0"
+    destinations: 
+      - 
+        position: 
+          x: 25.6679344177
+          y: 5.75819444656
+          z: 0.0
+        orientation: 
+          x: 0.0
+          y: 0.0
+          z: 0.0
+          w: 1.0
+  - 
+    robot_name: "robot_2"
+    destinations: 
+      - 
+        position: 
+          x: 26.8538856506
+          y: 19.318649292
+          z: 0.0
+        orientation: 
+          x: 0.0
+          y: 0.0
+          z: 0.0
+          w: 1.0
