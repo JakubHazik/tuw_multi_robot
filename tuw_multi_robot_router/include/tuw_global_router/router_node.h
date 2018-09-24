@@ -121,6 +121,8 @@ private:
     std::string singleRobotGoalTopic_;
     std::string singleRobotIdGoalTopic_; // A topic to send a goal to a robot specified by its id 
                                          // R.Desarzens
+    std::string singleRobotName_;
+    
     bool publish_routing_table_;
     bool got_map_ = false;
     bool got_graph_ = false;
@@ -130,7 +132,6 @@ private:
     int id_;
     float topic_timeout_s_ = 10;
     bool freshPlan_ = false;
-    std::string singleRobotName_ = "";
     bool monitor_enabled_;
   
     // Stores robot's state variable as attribute to allow modification of a specific goal while 

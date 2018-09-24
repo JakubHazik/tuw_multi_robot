@@ -63,7 +63,7 @@ interval_sim 100  # simulation timestep in milliseconds
 
 window
 ( 
-  size [ 1696 1028 ] # in pixels
+  size [ 928 1028 ] # in pixels
   scale 11.788   # pixels per meter
   center [ 15.183  19.074 ]
   rotate [ 2.000  762.500 ]
