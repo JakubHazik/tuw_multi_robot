@@ -45,12 +45,12 @@ LocalBehaviorControllerNode::LocalBehaviorControllerNode(ros::NodeHandle &n)
   observer_ = RobotStateObserver();
   robot_step_ = -1;
   robot_route_ = tuw_multi_robot_msgs::Route();
-  
+
   n_param_.param<std::string>("robot_name", robot_name_, "r0");
   ROS_INFO("robot name = %s", robot_name_.c_str());
 
   n_param_.param<double>("robot_radius", robot_radius_, robot_radius_);
-  
+
   n_param_.param<double>("robot_default_radius", robotDefaultRadius_, 0.3);
 
   n_param_.param<std::string>("path_topic", topic_path_, "path");
@@ -58,15 +58,15 @@ LocalBehaviorControllerNode::LocalBehaviorControllerNode(ros::NodeHandle &n)
   n_param_.param<std::string>("route_topic", topic_route_, "route");
 
   n_param_.param<std::string>("robotInfo_topic", topic_robot_info_, "/robot_info");
-  
+
   n_param_.param<std::string>("pose_topic", topic_pose_, "pose");
-  
+
   n_param_.param<std::string>("frame_map", frame_map_, "map");
-  
+
   n_param_.param<std::string>("frame_map", frame_map_, "map");
-  
+
   n_param_.param<double>("update_rate", update_rate_, 1.0);
-  
+
   n_param_.param<double>("update_rate_info", update_rate_info_, 5.0);
 
   subPose_ = n.subscribe<geometry_msgs::PoseWithCovarianceStamped>(topic_pose_, 1,
@@ -75,11 +75,11 @@ LocalBehaviorControllerNode::LocalBehaviorControllerNode(ros::NodeHandle &n)
 
   subRoute_ = n.subscribe<tuw_multi_robot_msgs::Route>(topic_route_, 1,
                                                        &LocalBehaviorControllerNode::subRouteCb, this);
-  
+
   pubRobotInfo_ = n.advertise<tuw_multi_robot_msgs::RobotInfo>(topic_robot_info_, 10000);
   pubPath_ = n.advertise<nav_msgs::Path>(topic_path_, 1);
-  
-  
+
+
   ros::Rate r(update_rate_);
 
   int robot_info_trigger_ = 0;
@@ -90,7 +90,7 @@ LocalBehaviorControllerNode::LocalBehaviorControllerNode(ros::NodeHandle &n)
     if(robot_info_trigger_ >  update_rate_ / update_rate_info_) {
         publishRobotInfo();
         robot_info_trigger_ = 0;
-    }            
+    }
     robot_info_trigger_++;
   }
 }
@@ -101,24 +101,24 @@ void LocalBehaviorControllerNode::publishPath(std::vector<Eigen::Vector3d> _p)
   ros::Time now = ros::Time::now();
   path.header.stamp = now;
   path.header.frame_id = frame_map_;
-  
+
   for(auto&& p : _p)
   {
     geometry_msgs::PoseStamped ps;
     ps.header.stamp = now;
     ps.header.frame_id = frame_map_;
-     
+
     ps.pose.position.x = p[0];
     ps.pose.position.y = p[1];
-    
+
     Eigen::Quaternion<float> q;
     q = Eigen::AngleAxisf(p[2], Eigen::Vector3f::UnitZ());
-    
+
     ps.pose.orientation.x = q.x();
     ps.pose.orientation.y = q.y();
     ps.pose.orientation.z = q.z();
     ps.pose.orientation.w = q.w();
-    
+
     path.poses.push_back(ps);
   }
   pubPath_.publish(path);
@@ -128,15 +128,15 @@ void LocalBehaviorControllerNode::updatePath()
 {
   if(robot_route_.segments.size() == 0)
     return;
-    
+
   std::vector<Eigen::Vector3d> path;
   // std::vector<PathSegment> seg_path;
-  
+
   auto&& seg = robot_route_.segments.begin();
   seg += robot_step_;
-  
+
   bool valid = true;
-  
+
   // if(!robot_name_.compare("robot_0"))
   //   ROS_INFO("NEW ROBOT");
 
@@ -151,28 +151,32 @@ void LocalBehaviorControllerNode::updatePath()
         valid = false;
       }
     }
-    
+
     // add segments to path as long as the prec. are fulfilled
     if(valid)
     {
       Eigen::Vector3d pose;
-      
+
       double r, p, y;
       tf::Quaternion q(seg->end.orientation.x, seg->end.orientation.y, seg->end.orientation.z, seg->end.orientation.w);
       tf::Matrix3x3(q).getRPY(r, p, y);
-      
+
       pose[0] = seg->end.position.x;
       pose[1] = seg->end.position.y;
       pose[2] = y;
-      // if(!robot_name_.compare("robot_0"))
-      //  ROS_INFO("%s : yaw %f", robot_name_.c_str(), y);
-      
+      // DEBUG
+      // if(!robot_name_.compare("robot_1"))
+      //  ROS_INFO("%s : (%f,%f)", robot_name_.c_str(),seg->end.position.x,seg->end.position.y);
+
       path.emplace_back(pose);
     }
   }
-  
+
   if(path.size() > 1)
   {
+    // DEBUG
+    /*if(!robot_name_.compare("robot_1"))
+      ROS_INFO("%d",path.size());*/
     publishPath(path);
   }
 }
@@ -180,15 +184,15 @@ void LocalBehaviorControllerNode::updatePath()
 void LocalBehaviorControllerNode::subRouteCb(const tuw_multi_robot_msgs::Route::ConstPtr &_route)
 {
   robot_route_ = *_route;
-  
+
   if(robot_route_.segments.size() == 0)
     return;
-  
+
   // clear when new route arrives
   robot_step_ = 0;
-  
+
   std::vector<PathSegment> seg_path;
-  
+
   // go through all segments in the route
   for(auto&& seg : robot_route_.segments)
   {
@@ -198,10 +202,10 @@ void LocalBehaviorControllerNode::subRouteCb(const tuw_multi_robot_msgs::Route::
     path_seg.goal[0] = seg.end.position.x;
     path_seg.goal[1] = seg.end.position.y;
     path_seg.width = seg.width;
-    
+
     seg_path.emplace_back(path_seg);
   }
-  
+
   observer_.init(seg_path);
 }
 
@@ -209,7 +213,7 @@ void LocalBehaviorControllerNode::subPoseCb(const geometry_msgs::PoseWithCovaria
 {
   robot_pose_ = _pose->pose;
   bool changed = true;
-  
+
   robot_step_ = observer_.getStep(Eigen::Vector2d(_pose->pose.pose.position.x, _pose->pose.pose.position.y), changed);
 }
 

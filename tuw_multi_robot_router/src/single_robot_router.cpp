@@ -75,6 +75,8 @@ bool SingleRobotRouter::getRouteCandidate(const uint32_t _start, const uint32_t 
     for (std::vector<RouteVertex>::const_iterator rit = reversedPath.cend(); rit != reversedPath.cbegin();)
     {
         rit--;
+        // DEBUG
+        // ROS_INFO("segment_id : %d",rit->getSegment().getSegmentId());
         _path.emplace_back(*rit);
     }
 

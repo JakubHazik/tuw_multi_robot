@@ -11,11 +11,12 @@
     <param name="cmd_vel_topic" value="cmd_vel"/>
     <param name="path_topic" value="path"/>
     <param name="topic_control" value="ctrl"/>
+    <param name="goal_radius" value="0.2"/>
   </node>
   
   <node pkg="tuw_multi_robot_local_behavior_controller" type="tuw_local_behavior_controller_node" name="behavior_$(arg robot_name)" output="screen">
     <param name="robot_name" value="$(arg robot_name)" />
-    <param name="robot_radius" value="0.3" />
+    <param name="robot_radius" value="1.4" />
     <param name="update_rate_info" value="$(arg update_rate_info)"/>
   </node>
   

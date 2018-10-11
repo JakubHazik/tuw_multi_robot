@@ -15,7 +15,9 @@ namespace velocity_controller
     {
         actualPreconditions.clear();
         path_ = _path;
-		pathCounter_ = 0;
+		    pathCounter_ = 0;
+        // DEBUG
+        // ROS_INFO("Je me set le path");
         plan_active = true;
     }
 
@@ -34,11 +36,11 @@ namespace velocity_controller
     {
 		if(actualPreconditions.size() <= pc.robot)
 			actualPreconditions.resize(pc.robot + 1, 0);
-		
+
 		actualPreconditions[pc.robot] = pc.stepCondition;
     }
 
-    
+
     bool SegmentController::checkPrecondition( PathPoint p )
     {
         for ( const auto & pc : p.precondition )
@@ -69,7 +71,7 @@ namespace velocity_controller
             {
                 if ( pathCounter_ < path_->size() )
                 {
-                    //ROS_INFO( "++" );
+                    // ROS_INFO( "++" );
                     pathCounter_++;
 
                     if ( actual_cmd_ == step )
@@ -109,6 +111,9 @@ namespace velocity_controller
             float theta = atan2( _odom.y - (*path_)[pathCounter_].y, _odom.x - (*path_)[pathCounter_].x );
             float d_theta = normalizeAngle( _odom.theta - theta  + M_PI );
 
+            // DEBUG
+            // ROS_INFO("x : %f, y : %f, theta : %f",_odom.x - (*path_)[pathCounter_].x,_odom.y - (*path_)[pathCounter_].y, theta);
+
             float d_theta_comp = M_PI / 2 + d_theta;
             float distance_to_goal = sqrt( ( _odom.x - (*path_)[pathCounter_].x ) * ( _odom.x - (*path_)[pathCounter_].x ) + ( _odom.y - (*path_)[pathCounter_].y ) * ( _odom.y - (*path_)[pathCounter_].y ) );
             float turn_radius_to_goal = absolute( distance_to_goal / 2 / cos( d_theta_comp ) );
@@ -130,6 +135,8 @@ namespace velocity_controller
 
             if ( absolute( d_theta ) > M_PI / 4 )         //If angle is bigger than 90deg the robot should turn on point
             {
+                // DEBUG
+                // ROS_INFO("theta: %f, d_theta : %f", theta, d_theta);
                 v_ = 0;
             }
             else if ( turn_radius_to_goal < 10 * distance_to_goal ) //If we have a small radius to goal we should turn with the right radius

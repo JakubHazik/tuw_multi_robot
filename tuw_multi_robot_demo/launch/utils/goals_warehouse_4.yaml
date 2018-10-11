@@ -18,16 +18,3 @@ robots:
           y: 0.0
           z: 0.0
           w: 1.0
-  - 
-    robot_name: "robot_2"
-    destinations: 
-      - 
-        position: 
-          x: 26.8538856506
-          y: 19.318649292
-          z: 0.0
-        orientation: 
-          x: 0.0
-          y: 0.0
-          z: 0.0
-          w: 1.0

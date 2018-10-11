@@ -51,7 +51,7 @@ ControllerNode::ControllerNode(ros::NodeHandle& n) : Controller(), n_(n), n_para
   goal_r_ = 0.2;
   n_param_.getParam("goal_radius", goal_r_);
   setGoalRadius(goal_r_);
-
+  
   Kp_val_ = 5.0;
   n_param_.getParam("Kp", Kp_val_);
 
@@ -116,7 +116,7 @@ void ControllerNode::subPathCb(const nav_msgs::Path_<std::allocator<void>>::Cons
   float dist = 0;
 
   auto it = _path->poses.begin();
-  /*
+  
   bool changed = true;
 
   while (it != _path->poses.end() && changed)
@@ -132,7 +132,7 @@ void ControllerNode::subPathCb(const nav_msgs::Path_<std::allocator<void>>::Cons
     {
       changed = false;
     }
-  }*/
+  }
 
   std::vector<PathPoint> path;
   for (; it != _path->poses.end(); ++it)
