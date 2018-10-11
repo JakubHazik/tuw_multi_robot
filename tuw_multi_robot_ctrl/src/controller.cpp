@@ -8,12 +8,12 @@ namespace velocity_controller
 Controller::Controller()
 {
   actual_cmd_ = run;
+  idx_path_target_point_ = 0;
   current_pose_ = PathPoint();
 }
 
 void Controller::setPath(std::shared_ptr<std::vector<PathPoint> > _path)
 {
-  path_ = _path;
   // DEBUG
   /* int count=0;
   for(auto it=path_->begin();it!=path_->end();it++) {
@@ -21,7 +21,8 @@ void Controller::setPath(std::shared_ptr<std::vector<PathPoint> > _path)
     count++;
   }
   ROS_INFO("Je me set le path"); */
-  path_iterator_ = path_->begin();
+  path_ = *_path;
+  idx_path_target_point_ = 0;
   plan_active = true;
 }
 
@@ -34,18 +35,19 @@ bool Controller::checkGoal(PathPoint _odom)
 {
   if (plan_active && actual_cmd_ != wait_step)
   {
-    float dy = (float)(_odom.y - path_iterator_->y);
-    float dx = (float)(_odom.x - path_iterator_->x);
+    const PathPoint &target = path_[idx_path_target_point_];
+    float dy = (float)(_odom.y - target.y);
+    float dx = (float)(_odom.x - target.x);
     if (sqrt(dx * dx + dy * dy) < goal_radius_)
     {
-      if (path_iterator_ != path_->end())
+      if (idx_path_target_point_ < path_.size())
       {
         // ROS_INFO("++");
-        path_iterator_++;
+        idx_path_target_point_++;
         if (actual_cmd_ == step)
           actual_cmd_ = wait_step;
 
-        if (path_iterator_ == path_->end())
+        if (idx_path_target_point_ == path_.size())
         {
           ROS_INFO("Multi Robot Controller: goal reached");
           plan_active = false;
@@ -62,6 +64,14 @@ void Controller::setPID(float _Kp, float _Ki, float _Kd)
   Ki_ = _Ki;
 }
 
+size_t Controller::getProgress(){
+    return idx_path_target_point_;
+}
+
+bool Controller::isActive(){
+    return plan_active;
+}
+
 void Controller::setState(state s)
 {
   actual_cmd_ = s;
@@ -74,15 +84,16 @@ void Controller::update(PathPoint _odom, float _delta_t)
 
   if (plan_active && actual_cmd_ != wait_step && actual_cmd_ != stop)
   {
-    float theta = atan2(_odom.y - path_iterator_->y, _odom.x - path_iterator_->x);
+    const PathPoint &target = path_[idx_path_target_point_];
+    float theta = atan2(_odom.y - target.y, _odom.x - target.x);
     float d_theta = normalizeAngle(_odom.theta - theta + M_PI);
     // DEBUG
     // ROS_INFO("x : %f, y : %f, theta : %f",_odom.x - path_iterator_->x, _odom.y - path_iterator_->y, theta);
     // ROS_INFO("current goal on path : (%f,%f)", path_iterator_->x, path_iterator_->y);
 
     float d_theta_comp = M_PI / 2 + d_theta;
-    float distance_to_goal = sqrt((_odom.x - path_iterator_->x) * (_odom.x - path_iterator_->x) +
-                                  (_odom.y - path_iterator_->y) * (_odom.y - path_iterator_->y));
+    float distance_to_goal = sqrt((_odom.x - target.x) * (_odom.x - target.x) +
+                                  (_odom.y - target.y) * (_odom.y - target.y));
     float turn_radius_to_goal = absolute(distance_to_goal / 2 / cos(d_theta_comp));
 
     float e = -d_theta;

@@ -35,14 +35,11 @@ namespace tuw_graph
             bool loadCustomGraph(std::string _path);
             
             
-            ros::Publisher                          pubVoronoiMap_;
+            ros::Publisher                          pubVoronoiMapImage_;
             ros::Publisher                          pubSegments_;
             ros::Subscriber                         subMap_;
   
 
-            std::string                             topicGlobalMap_;
-            std::string                             topicVoronoiMap_;
-            std::string                             topicSegments_;
             std::string                             graphCachePath_;
             std::string                             customGraphPath_;
     
@@ -51,17 +48,22 @@ namespace tuw_graph
 
 
             size_t                                  current_map_hash_;
+            bool                                    publishVoronoiMapImage_;    /// for debuging
             Eigen::Vector2d                         origin_;
             float                                   resolution_;
             cv::Mat                                 map_;
             cv::Mat                                 distField_;
             cv::Mat                                 voronoiMap_;
-            float                                   path_length_;
+            float                                   segment_length_;
             std::unique_ptr<float[]>                potential;
             std::vector<Segment>                    segments_;
             int                                     smoothing_;
+            double                                  inflation_;
             float                                   crossingOptimization_;
             float                                   endSegmentOptimization_;
+            
+            
+            nav_msgs::OccupancyGrid voronoiMapImage_;
     };
 
 }
