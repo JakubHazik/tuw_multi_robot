@@ -111,7 +111,9 @@ void VoronoiGraphVisual::setMessage(const tuw_multi_robot_msgs::Graph::ConstPtr 
         // Add a label to the segment        
         segmentLabel[i].reset(new TextVisual(scene_manager_, frame_node_));
         segmentLabel[i]->setColor(colorPath_);
-        segmentLabel[i]->setPosition(Ogre::Vector3((p1.x) * msg->resolution + msg->origin.position.x, (p1.y) * msg->resolution + msg->origin.position.y, p1.z * msg->resolution + msg->origin.position.z));
+        segmentLabel[i]->setPosition(Ogre::Vector3(((p1.x) * msg->resolution + msg->origin.position.x+ (p2.x) * msg->resolution + msg->origin.position.x)/2,
+                                     ((p1.y) * msg->resolution + msg->origin.position.y + (p2.y) * msg->resolution + msg->origin.position.y)/2,
+                                      p1.z * msg->resolution + msg->origin.position.z));
         segmentLabel[i]->setCaption(std::to_string(seg.id));
         
     }
