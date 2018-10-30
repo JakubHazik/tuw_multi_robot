@@ -33,10 +33,11 @@
 #include <tuw_multi_robot_msgs/Graph.h>
 #include <geometry_msgs/Vector3.h>
 
-
 #include <rviz/ogre_helpers/shape.h>
 #include <rviz/ogre_helpers/arrow.h>
 #include <rviz/ogre_helpers/line.h>
+#include <rviz/ogre_helpers/movable_text.h>
+#include <tuw_multi_robot_rviz/TextVisual.h>
 
 namespace Ogre
 {
@@ -91,6 +92,8 @@ private:
   //std::vector<boost::shared_ptr<rviz::Arrow> > pathPtsTheta_;
   std::vector<boost::shared_ptr<rviz::Line> > pathLine;
   std::vector<boost::shared_ptr<rviz::Shape> > crossingShape;
+  std::vector<boost::shared_ptr<TextVisual> > segmentLabel;
+
 
   // A SceneNode whose pose is set to match the coordinate frame of
   // the Imu message header.
