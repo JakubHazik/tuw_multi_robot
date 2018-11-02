@@ -1,0 +1,15 @@
+global_costmap:
+  global_frame: /map
+  robot_base_frame: /robot_0/base_link
+  static_map: true
+  rolling_window: false
+  update_frequency: 4.0
+  publish_frequency: 4.0
+  width: 50
+  height: 50
+  resolution: 1 
+
+  # Inflation layer (see http://wiki.ros.org/costmap_2d/hydro/inflation)
+  inflation_radius: 0.7 # 0.2 # Radius at which the obstacles cost value is inflated
+  cost_scaling_factor: 2 #10 # Cost of the obstables
+

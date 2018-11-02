@@ -1,0 +1,12 @@
+# Global planner parameters (see )
+GlobalPlanner:
+  allow_unknown: false # Allow controller to go into unknow space
+  visualize_potential: true # Visualisation of the potential in rviz
+  use_dijkstra: false  # Use Dijkstra algorithm or A*
+  use_quadratic: false # Use quadratic computation of the potential
+  use_grid_path: true  # If true path will follow the grid, else gradient descent
+  cost_factor: 0.55 # How much you care about the cost coming from costmap
+  neutral_cost: 66 # Constant cost added to the whole
+  lethal_cost: 253
+  recovery_behavior_enabled: false
+

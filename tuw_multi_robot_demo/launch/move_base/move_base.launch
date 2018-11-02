@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+
+<launch>
+
+  <node pkg="tf" type="static_transform_publisher" name="map_to_A" args="0 0 0 0 0 0 /map /robot_0/odom 100"/>
+
+  <node pkg="move_base" type="move_base" name="move_base_robot_0" output="screen" >
+    <param name="controller_frequency" value="4.0" />
+    <param name="recovery_behavior_enabled" value="true" />
+    <param name="max_planning_retries" value="-1" />
+    <param name="clearing_rotation_allowed" value="true" />
+    <param name="planner_frequency" value="20.0" />
+
+    <!-- Command topic -->
+    <!-- Direct command to V-REP topic --> 
+    <remap from="/cmd_vel" to="/robot_0/cmd_vel"/>
+    <remap from="/odom" to="/robot_0/odom"/> 
+    <remap from="/move_base_simple/goal" to="/goal"/> 
+    <!-- Costmaps -->
+    <rosparam file="$(find tuw_multi_robot_demo)/launch/costmap_common_params.yaml" command="load" ns="global_costmap" />
+    <rosparam file="$(find tuw_multi_robot_demo)/launch/costmap_common_params.yaml" command="load" ns="local_costmap" />
+    <rosparam file="$(find tuw_multi_robot_demo)/launch/local_costmap_params.yaml" command="load" />
+    <rosparam file="$(find tuw_multi_robot_demo)/launch/global_costmap_params.yaml" command="load" />
+    <!-- Planners -->
+    <rosparam file="$(find tuw_multi_robot_demo)/launch/global_planner_params.yaml" command="load" />
+    <rosparam file="$(find tuw_multi_robot_demo)/launch/teb_planner_params.yaml" command="load" />
+ 
+    <param name="base_local_planner" value="teb_local_planner/TebLocalPlannerROS" />
+    <param name="base_global_planner" value="global_planner/GlobalPlanner"/>
+    <param name="oscillation_timeout" value="0.1"/>
+  </node>
+
+</launch>
