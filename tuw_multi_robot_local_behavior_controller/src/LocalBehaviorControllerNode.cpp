@@ -55,6 +55,8 @@ LocalBehaviorControllerNode::LocalBehaviorControllerNode ( ros::NodeHandle &n )
 
     n_param_.param<double> ( "update_rate", update_rate_, 1.0 );
 
+    n_param_.param<bool> ( "publish_goal", publish_goal_, false);
+
     subCtrlState_ = n.subscribe<tuw_nav_msgs::ControllerState> ( "state_trajectory_ctrl", 1,  &LocalBehaviorControllerNode::subCtrlCb, this );
     subPose_ = n.subscribe<geometry_msgs::PoseWithCovarianceStamped> ( "pose", 1,  &LocalBehaviorControllerNode::subPoseCb, this );
     subRobotInfo_ = n.subscribe<tuw_multi_robot_msgs::RobotInfo> ( "/robot_info", 10000, &LocalBehaviorControllerNode::subRobotInfoCb, this );
@@ -63,6 +65,8 @@ LocalBehaviorControllerNode::LocalBehaviorControllerNode ( ros::NodeHandle &n )
 
     pubRobotInfo_ = n.advertise<tuw_multi_robot_msgs::RobotInfo> ( "/robot_info", 10000 );
     pubPath_ = n.advertise<nav_msgs::Path> ( "path", 1 );
+    if(publish_goal_)
+      pubGoal_ = n.advertise<geometry_msgs::PoseStamped> ( "local_goal", 1 );
 
 
     ros::Rate r ( update_rate_ );
@@ -119,7 +123,9 @@ void LocalBehaviorControllerNode::updatePath() {
             pose_stamped.pose = route_.segments[i].end;
             path_.poses.push_back(pose_stamped);            
         }
-        pubPath_.publish(path_);        
+        pubPath_.publish(path_); 
+        // Publish last point as goal
+        pubGoal_.publish(path_.poses.back());      
     }
     
 }

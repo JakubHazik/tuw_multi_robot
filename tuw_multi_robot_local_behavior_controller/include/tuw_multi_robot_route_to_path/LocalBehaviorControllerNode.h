@@ -58,6 +58,7 @@ private:
 
   ros::Publisher pubPath_;
   ros::Publisher pubRobotInfo_;
+  ros::Publisher pubGoal_;
   ros::Subscriber subRoute_;
   ros::Subscriber subCtrlState_;
   ros::Subscriber subPose_;
@@ -69,6 +70,7 @@ private:
   std::string robot_name_;
   double robot_radius_;
   double robotDefaultRadius_ = 0.6;
+  bool publish_goal_;
   
   geometry_msgs::PoseWithCovariance robot_pose_;
   tuw_multi_robot_msgs::Route route_;
