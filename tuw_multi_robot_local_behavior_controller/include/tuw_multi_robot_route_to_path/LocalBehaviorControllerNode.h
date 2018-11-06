@@ -31,12 +31,14 @@
 #include <ros/ros.h>
 #include <nav_msgs/Path.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include <geometry_msgs/PoseArray.h>
 #include <tuw_nav_msgs/ControllerState.h>
 #include <tuw_multi_robot_msgs/Route.h>
 #include <tuw_multi_robot_msgs/RobotInfo.h>
 #include <tuw_multi_robot_route_to_path/RobotRouteToPath.h>
 #include <tuw_multi_robot_route_to_path/RobotStateObserver.h>
 #include <tuw_multi_robot_route_to_path/RouteProgressMonitor.h>
+#include <ifollow_nav_msgs/GetViapoints.h>
 
 #include <memory>
 
@@ -55,6 +57,7 @@ public:
   void publishRobotInfo();
 private:
   void updatePath();
+  bool sendViapoints(ifollow_nav_msgs::GetViapoints::Request  &req, ifollow_nav_msgs::GetViapoints::Response &res);
 
   ros::Publisher pubPath_;
   ros::Publisher pubRobotInfo_;
@@ -85,6 +88,8 @@ private:
   void subPoseCb(const geometry_msgs::PoseWithCovarianceStampedConstPtr& _pose);
   void subRobotInfoCb(const tuw_multi_robot_msgs::RobotInfo::ConstPtr& _robot_info);
   void subRouteCb(const tuw_multi_robot_msgs::Route::ConstPtr& _route);
+
+  ros::ServiceServer viapoints_srv_;
 
   //RobotRouteToPath converter_;
   //RobotStateObserver observer_;

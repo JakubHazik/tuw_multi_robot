@@ -5,10 +5,8 @@ footprint: [[0.315, 0.7], [0.315, -0.7], [-1.405, -0.7], [-1.405, 0.7]]
 footprint_padding: 0.00
 
 # Obstacle layer (see http://wiki.ros.org/costmap_2d/hydro/obstacles)
-#observation_sources: hokuyo_laser_scan_sensor rplidar_laser_scan_sensor
-#frontHokuyo_laser_scan_sensor: {sensor_frame: /frontHokuyo, data_type: LaserScan, topic: /scan_frontHokuyo, marking: true, clearing: true}
-#backHokuyo_laser_scan_sensor: {sensor_frame: /backHokuyo, data_type: LaserScan, topic: /scan_backHokuyo, marking: true, clearing: true}
-#rplidar_laser_scan_sensor: {sensor_frame: /RPLidar, data_type: LaserScan, topic: /scan_rplidar, marking: true, clearing: true}
-#obstacle_range: 40 # Max distance at which measurement are taken into account for the costmap
-#raytrace_range: 45 # Max distance at which to raytrace obstacles
+observation_sources: base_scan
+base_scan: {sensor_frame: /base_laser_link, data_type: LaserScan, topic: base_scan, marking: true, clearing: true}
+obstacle_range: 40 # Max distance at which measurement are taken into account for the costmap
+raytrace_range: 45 # Max distance at which to raytrace obstacles
 

@@ -14,13 +14,6 @@ Controller::Controller()
 
 void Controller::setPath(std::shared_ptr<std::vector<PathPoint> > _path)
 {
-  // DEBUG
-  /* int count=0;
-  for(auto it=path_->begin();it!=path_->end();it++) {
-     ROS_INFO("Path point %d : (%f,%f)",count,it->x,it->y);
-    count++;
-  }
-  ROS_INFO("Je me set le path"); */
   path_ = *_path;
   idx_path_target_point_ = 0;
   plan_active = true;
@@ -87,9 +80,6 @@ void Controller::update(PathPoint _odom, float _delta_t)
     const PathPoint &target = path_[idx_path_target_point_];
     float theta = atan2(_odom.y - target.y, _odom.x - target.x);
     float d_theta = normalizeAngle(_odom.theta - theta + M_PI);
-    // DEBUG
-    // ROS_INFO("x : %f, y : %f, theta : %f",_odom.x - path_iterator_->x, _odom.y - path_iterator_->y, theta);
-    // ROS_INFO("current goal on path : (%f,%f)", path_iterator_->x, path_iterator_->y);
 
     float d_theta_comp = M_PI / 2 + d_theta;
     float distance_to_goal = sqrt((_odom.x - target.x) * (_odom.x - target.x) +
@@ -111,8 +101,6 @@ void Controller::update(PathPoint _odom, float _delta_t)
     v_ = max_v_;
     if (absolute(d_theta) > M_PI / 4)  // If angle is bigger than 90deg the robot should turn on point
     {
-      // DEBUG
-      // ROS_INFO("theta: %f, d_theta : %f", theta, d_theta);
       v_ = 0;
     }
     else if (turn_radius_to_goal <

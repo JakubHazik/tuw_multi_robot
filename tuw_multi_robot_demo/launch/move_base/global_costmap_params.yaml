@@ -1,10 +1,9 @@
 global_costmap:
   global_frame: /map
-  robot_base_frame: /robot_0/base_link
   static_map: true
   rolling_window: false
-  update_frequency: 4.0
-  publish_frequency: 4.0
+  update_frequency: 0.1
+  publish_frequency: 0.1
   width: 50
   height: 50
   resolution: 1 

@@ -64,10 +64,15 @@ LocalBehaviorControllerNode::LocalBehaviorControllerNode ( ros::NodeHandle &n )
     subRoute_ = n.subscribe<tuw_multi_robot_msgs::Route> ( "route", 1, &LocalBehaviorControllerNode::subRouteCb, this );
 
     pubRobotInfo_ = n.advertise<tuw_multi_robot_msgs::RobotInfo> ( "/robot_info", 10000 );
-    pubPath_ = n.advertise<nav_msgs::Path> ( "path", 1 );
-    if(publish_goal_)
-      pubGoal_ = n.advertise<geometry_msgs::PoseStamped> ( "local_goal", 1 );
 
+    // Either you publish and the goal and the navigation stack retreive the path through a service. Either you send the full path.
+    if(publish_goal_) {
+      pubGoal_ = n.advertise<geometry_msgs::PoseStamped> ( "local_goal", 1 );
+      viapoints_srv_ = n.advertiseService("get_viapoints", &LocalBehaviorControllerNode::sendViapoints, this);
+    } else {
+      pubPath_ = n.advertise<nav_msgs::Path> ( "path", 1 );
+    }
+   
 
     ros::Rate r ( update_rate_ );
 
@@ -117,15 +122,23 @@ void LocalBehaviorControllerNode::updatePath() {
         path_.header.stamp = ros::Time::now(); 
         pose_stamped.header = route_.header;
         pose_stamped.header.stamp = ros::Time::now(); 
-            
+        
         path_.poses.clear();
+        double yaw{0.0};
         for ( size_t i = path_segment_start; i <= path_segment_end; i++ ) {
-            pose_stamped.pose = route_.segments[i].end;
-            path_.poses.push_back(pose_stamped);            
+            pose_stamped.pose.position = route_.segments[i].end.position;
+            // Orientation is required by move_base framework so it is computed from segment's orientation     
+            yaw=atan2(route_.segments[i].end.position.y-route_.segments[i].start.position.y,route_.segments[i].end.position.x-route_.segments[i].start.position.x); 
+            pose_stamped.pose.orientation = tf::createQuaternionMsgFromYaw(yaw);
+            path_.poses.push_back(pose_stamped);
         }
-        pubPath_.publish(path_); 
-        // Publish last point as goal
-        pubGoal_.publish(path_.poses.back());      
+
+        if(!publish_goal_) {
+          pubPath_.publish(path_); 
+        } else { 
+          // Publish last point as goal
+          pubGoal_.publish(path_.poses.back());
+        }
     }
     
 }
@@ -169,4 +182,18 @@ void LocalBehaviorControllerNode::publishRobotInfo() {
 
     pubRobotInfo_.publish ( robot_info_ );
 }
+
+bool LocalBehaviorControllerNode::sendViapoints(ifollow_nav_msgs::GetViapoints::Request  &req, ifollow_nav_msgs::GetViapoints::Response &res)
+{
+    geometry_msgs::PoseArray viapoints;
+
+    for(const auto & pose_stamped : path_.poses) {
+      viapoints.poses.push_back(pose_stamped.pose);
+    }  
+ 
+    res.viapoints = viapoints;
+    return true;
+}
+
+
 }  // namespace tuw_multi_robot_route_to_path

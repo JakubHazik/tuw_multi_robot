@@ -9,6 +9,7 @@
 <arg name="launch_map_server"                   default="true"      />
 <arg name="launch_multi_robot_route_planner"    default="true"      />
 <arg name="launch_local_controller"             default="true"      />
+<arg name="launch_move_base"                    default="true"      />
 <arg name="launch_local_controller_one_for_all" default="false"      />
 <arg name="nr_of_robots"                        default="5"         /> 
 
@@ -63,6 +64,7 @@
     <include file="$(find tuw_multi_robot_demo)/launch/local_controller_recursive.launch">
       <arg name="nr_of_robots" default="$(arg nr_of_robots)"/> 
       <arg name="robot_name_prefix" default="robot_"/>
+      <arg name="launch_move_base" value="$(arg launch_move_base)" />
     </include>
   </group>
 </group>

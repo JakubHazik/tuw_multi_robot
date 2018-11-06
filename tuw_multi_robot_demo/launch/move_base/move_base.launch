@@ -1,33 +1,38 @@
 <?xml version="1.0"?>
 
 <launch>
+  <arg name="robot_id" default="robot_0"/>
 
-  <node pkg="tf" type="static_transform_publisher" name="map_to_A" args="0 0 0 0 0 0 /map /robot_0/odom 100"/>
+  <node pkg="tf" type="static_transform_publisher" name="tf_map_$(arg robot_id)" args="0 0 0 0 0 0 /map /$(arg robot_id)/odom 100"/>
 
-  <node pkg="move_base" type="move_base" name="move_base_robot_0" output="screen" >
+  <node pkg="move_base" type="move_base" name="move_base" output="screen" >
     <param name="controller_frequency" value="4.0" />
-    <param name="recovery_behavior_enabled" value="true" />
+    <param name="recovery_behavior_enabled" value="false" />
     <param name="max_planning_retries" value="-1" />
-    <param name="clearing_rotation_allowed" value="true" />
-    <param name="planner_frequency" value="20.0" />
+    <param name="clearing_rotation_allowed" value="false" />
+    <param name="planner_frequency" value="4.0" />
+    <param name="SplinePlanner/viapoints_service" value="/$(arg robot_id)/get_viapoints" />
 
-    <!-- Command topic -->
-    <!-- Direct command to V-REP topic --> 
-    <remap from="/cmd_vel" to="/robot_0/cmd_vel"/>
-    <remap from="/odom" to="/robot_0/odom"/> 
-    <remap from="/move_base_simple/goal" to="/goal"/> 
+    <remap from="/$(arg robot_id)/move_base_simple/goal" to="local_goal"/> 
+    <remap from="/$(arg robot_id)/map" to="/map"/> 
+    <remap from="get_viapoints" to="/$(arg robot_id)/get_viapoints"/> 
+    
     <!-- Costmaps -->
-    <rosparam file="$(find tuw_multi_robot_demo)/launch/costmap_common_params.yaml" command="load" ns="global_costmap" />
-    <rosparam file="$(find tuw_multi_robot_demo)/launch/costmap_common_params.yaml" command="load" ns="local_costmap" />
-    <rosparam file="$(find tuw_multi_robot_demo)/launch/local_costmap_params.yaml" command="load" />
-    <rosparam file="$(find tuw_multi_robot_demo)/launch/global_costmap_params.yaml" command="load" />
+    <rosparam file="$(find tuw_multi_robot_demo)/launch/move_base/costmap_common_params.yaml" command="load" ns="global_costmap" />
+    <param name="global_costmap/robot_base_frame" value="$(arg robot_id)/base_link"/>
+    <param name="local_costmap/robot_base_frame" value="$(arg robot_id)/base_link"/>
+    <param name="TebLocalPlannerROS/odom_topic" value="odom"/>
+    <param name="TebLocalPlannerROS/map_frame" value="$(arg robot_id)/odom"/>
+    <rosparam file="$(find tuw_multi_robot_demo)/launch/move_base/costmap_common_params.yaml" command="load" ns="local_costmap" />
+    <rosparam file="$(find tuw_multi_robot_demo)/launch/move_base/local_costmap_params.yaml" command="load" />
+    <rosparam file="$(find tuw_multi_robot_demo)/launch/move_base/global_costmap_params.yaml" command="load" />
     <!-- Planners -->
-    <rosparam file="$(find tuw_multi_robot_demo)/launch/global_planner_params.yaml" command="load" />
-    <rosparam file="$(find tuw_multi_robot_demo)/launch/teb_planner_params.yaml" command="load" />
+    <rosparam file="$(find tuw_multi_robot_demo)/launch/move_base/global_planner_params.yaml" command="load" />
+    <rosparam file="$(find tuw_multi_robot_demo)/launch/move_base/teb_planner_params.yaml" command="load" />
  
     <param name="base_local_planner" value="teb_local_planner/TebLocalPlannerROS" />
-    <param name="base_global_planner" value="global_planner/GlobalPlanner"/>
-    <param name="oscillation_timeout" value="0.1"/>
+    <param name="base_global_planner" value="quintic_spline_planner/SplinePlanner"/>
   </node>
+
 
 </launch>
