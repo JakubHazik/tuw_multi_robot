@@ -1,8 +1,8 @@
 header: 
   seq: 0
   stamp: 
-    secs: 1536762589
-    nsecs: 289132696
+    secs: 83
+    nsecs: 300000000
   frame_id: "map"
 robots: 
   - 
@@ -10,8 +10,8 @@ robots:
     destinations: 
       - 
         position: 
-          x: 25.6679344177
-          y: 5.75819444656
+          x: 25.5947608948
+          y: 4.69116973877
           z: 0.0
         orientation: 
           x: 0.0
@@ -23,8 +23,8 @@ robots:
     destinations: 
       - 
         position: 
-          x: 2.8853225708
-          y: 24.5633029938
+          x: 26.7599906921
+          y: 6.83491897583
           z: 0.0
         orientation: 
           x: 0.0
@@ -36,8 +36,8 @@ robots:
     destinations: 
       - 
         position: 
-          x: 26.8538856506
-          y: 19.318649292
+          x: 26.6057701111
+          y: 18.5912208557
           z: 0.0
         orientation: 
           x: 0.0
@@ -49,21 +49,21 @@ robots:
     destinations: 
       - 
         position: 
-          x: 10.6004161835
-          y: 8.79747867584
+          x: 27.4159507751
+          y: 20.4947032928
           z: 0.0
         orientation: 
           x: 0.0
           y: 0.0
-          z: -0.0697539951027
-          w: 0.99756422358
+          z: 0.0
+          w: 1.0
   - 
     robot_name: "robot_4"
     destinations: 
       - 
         position: 
-          x: 21.9806022644
-          y: 5.87063550949
+          x: 31.7144393921
+          y: 20.4486484528
           z: 0.0
         orientation: 
           x: 0.0
