@@ -180,7 +180,7 @@ bool VoronoiGeneratorNode::loadCustomGraph(std::string _path)
 void VoronoiGeneratorNode::publishSegments()
 {
     tuw_multi_robot_msgs::Graph graph;
-    graph.header.frame_id = "map";
+    graph.header.frame_id = "world";
     graph.header.seq = 0;
     graph.header.stamp = ros::Time::now();
 

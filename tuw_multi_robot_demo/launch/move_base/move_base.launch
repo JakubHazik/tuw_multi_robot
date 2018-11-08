@@ -1,9 +1,11 @@
 <?xml version="1.0"?>
 
 <launch>
-  <arg name="robot_id" default="robot_0"/>
+  <arg name="robot_id" default="robot_00"/>
 
-  <node pkg="tf" type="static_transform_publisher" name="tf_map_$(arg robot_id)" args="0 0 0 0 0 0 /map /$(arg robot_id)/odom 100"/>
+  <node pkg="tf" type="static_transform_publisher" name="tf_world_map_$(arg robot_id)" args="0 0 0 0 0 0 /world /$(arg robot_id)/map 100"/>
+
+  <node pkg="tf" type="static_transform_publisher" name="tf_map_$(arg robot_id)" args="0 0 0 0 0 0 /$(arg robot_id)/map /$(arg robot_id)/odom 100"/>
 
   <node pkg="move_base" type="move_base" name="move_base" output="screen" >
     <param name="controller_frequency" value="4.0" />
