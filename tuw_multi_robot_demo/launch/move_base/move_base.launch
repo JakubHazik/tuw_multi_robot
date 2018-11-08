@@ -19,19 +19,19 @@
     
     <!-- Costmaps -->
     <rosparam file="$(find tuw_multi_robot_demo)/launch/move_base/costmap_common_params.yaml" command="load" ns="global_costmap" />
-    <param name="global_costmap/robot_base_frame" value="$(arg robot_id)/base_link"/>
-    <param name="local_costmap/robot_base_frame" value="$(arg robot_id)/base_link"/>
-    <param name="TebLocalPlannerROS/odom_topic" value="odom"/>
-    <param name="TebLocalPlannerROS/map_frame" value="$(arg robot_id)/odom"/>
     <rosparam file="$(find tuw_multi_robot_demo)/launch/move_base/costmap_common_params.yaml" command="load" ns="local_costmap" />
     <rosparam file="$(find tuw_multi_robot_demo)/launch/move_base/local_costmap_params.yaml" command="load" />
     <rosparam file="$(find tuw_multi_robot_demo)/launch/move_base/global_costmap_params.yaml" command="load" />
+    <param name="global_costmap/robot_base_frame" value="$(arg robot_id)/base_link"/>
+    <param name="local_costmap/robot_base_frame" value="$(arg robot_id)/base_link"/>
     <!-- Planners -->
-    <rosparam file="$(find tuw_multi_robot_demo)/launch/move_base/global_planner_params.yaml" command="load" />
-    <rosparam file="$(find tuw_multi_robot_demo)/launch/move_base/teb_planner_params.yaml" command="load" />
+    <rosparam file="$(find tuw_multi_robot_demo)/launch/move_base/spline_planner_params.yaml" command="load" />
+    <rosparam file="$(find tuw_multi_robot_demo)/launch/move_base/drhmp_planner_params.yaml" command="load" />
+    <param name="DRHMPPlannerROS/odom_topic" value="$(arg robot_id)/odom"/>
+    <param name="DRHMPPlannerROS/map_frame" value="$(arg robot_id)/odom"/>
  
-    <param name="base_local_planner" value="teb_local_planner/TebLocalPlannerROS" />
-    <param name="base_global_planner" value="quintic_spline_planner/SplinePlanner"/>
+    <param name="base_local_planner" value="drhmp_local_planner/DRHMPPlannerROS" />
+    <param name="base_global_planner" value="global_spline_planner/SplinePlanner"/>
   </node>
 
 

@@ -1,0 +1,5 @@
+# Spline planner parameters
+SplinePlanner:
+  max_dist_to_path: 2.0 # Maximum distance from the path to the robot to allow planning
+  interpolator_mode: true # If true, the spline planner will just behave as a simple interpolator for given viapoints
+  # viapoints_service: get_viapoints  

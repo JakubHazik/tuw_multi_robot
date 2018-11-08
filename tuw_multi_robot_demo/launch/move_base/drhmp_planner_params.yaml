@@ -1,0 +1,4 @@
+DRHMPPlannerROS:
+  footprint_type: 'capsule'
+  footprint_values: [-0.44164261856208736, 0.0, 0.44164261856208736, 0.0, 0.4104178255569414]
+  pub_pos_cov_freq: 20.0
