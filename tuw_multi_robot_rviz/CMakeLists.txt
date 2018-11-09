@@ -119,7 +119,7 @@ catkin_package(
 # include_directories(include)
 include_directories(
   ${catkin_INCLUDE_DIRS}
-  ${EIGEN3_INCLUDE_DIR} 
+  ${EIGEN3_INCLUDE_DIR}
   include
 )
 
@@ -173,7 +173,7 @@ add_library(${PROJECT_NAME}
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME}
-  ${QT_LIBRARIES} 
+  ${QT_LIBRARIES}
   ${catkin_LIBRARIES}
 )
 ## Add cmake target dependencies of the library
@@ -216,8 +216,8 @@ target_link_libraries(${PROJECT_NAME}
 # )
 
 ## Mark executables and/or libraries for installation
-install(TARGETS 
-  ${PROJECT_NAME} 
+install(TARGETS
+  ${PROJECT_NAME}
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
@@ -238,6 +238,11 @@ install(FILES
 
 install(
   DIRECTORY icons
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/icons
+)
+
+install(
+  DIRECTORY media
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/icons
 )
 
