@@ -7,6 +7,7 @@
 	<arg name="speed_rescheduling"  default="true" />
 	<arg name="collision_resolver"  default="2" />
 	<arg name="publish_routing_table"  default="true" />
+	<arg name="frame_id"  default="world" />
     
 	
     <group if="$(arg use_gdb)">
@@ -25,6 +26,7 @@
         <param name="collision_resolver" value="$(arg collision_resolver)" />
         <param name="publish_routing_table" value="$(arg publish_routing_table)" />
 		<rosparam command="load" file="$(find tuw_multi_robot_demo)/cfg/multi_robot_planner/$(arg cfg)/multi_robot.yaml" />
+        <param name="frame_id" value="$(arg frame_id)" />
 	</node>
     </group>
 </launch>

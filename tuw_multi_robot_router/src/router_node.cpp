@@ -77,6 +77,8 @@ Router_Node::Router_Node ( ros::NodeHandle &_n ) : Router(),
     
     n_param_.param<std::string> ( "robot_id_goal", singleRobotIdGoalTopic_, "/goal_id" );
 
+    n_param_.param<std::string> ( "frame_id", frame_id_, frame_id_ );
+
     // static subscriptions
     subMap_ = n_.subscribe ( "map", 1, &Router_Node::mapCallback, this );
     subVoronoiGraph_ = n_.subscribe ( "segments", 1, &Router_Node::graphCallback, this );
@@ -542,7 +544,7 @@ void Router_Node::publishEmpty() {
     tuw_multi_robot_msgs::Route msg_route;
     msg_path.header.seq = 0;
     msg_path.header.stamp = time_first_robot_started_;
-    msg_path.header.frame_id = "map";
+    msg_path.header.frame_id = frame_id_;
     msg_route.header = msg_path.header;
 
     for ( RobotInfoPtr &robot: subscribed_robots_ ) {
@@ -565,7 +567,7 @@ void Router_Node::publish() {
     tuw_multi_robot_msgs::Route msg_route;
     msg_path.header.seq = 0;
     msg_path.header.stamp = time_first_robot_started_;
-    msg_path.header.frame_id = "map";
+    msg_path.header.frame_id = frame_id_;
     msg_route.header = msg_path.header;
 
     for ( int i = 0; i < active_robots_.size(); i++ ) {
@@ -577,7 +579,7 @@ void Router_Node::publish() {
         geometry_msgs::PoseStamped pose_1;
         pose_1.header.seq = 0;
         pose_1.header.stamp = time_first_robot_started_;
-        pose_1.header.frame_id = "map";
+        pose_1.header.frame_id = frame_id_;
 
         Eigen::Vector2d pos ( route[0].start[0] * mapResolution_, route[0].start[1] * mapResolution_ );
         pose_1.pose.position.x = pos[0] + mapOrigin_[0];
@@ -591,7 +593,7 @@ void Router_Node::publish() {
             geometry_msgs::PoseStamped pose;
             pose.header.seq = 0;
             pose.header.stamp = time_first_robot_started_;
-            pose.header.frame_id = "map";
+            pose.header.frame_id = frame_id_;
 
             Eigen::Vector2d pos ( c.end[0] * mapResolution_, c.end[1] * mapResolution_ );
             pose.pose.position.x = pos[0] + mapOrigin_[0];

@@ -3,7 +3,7 @@ header:
   stamp: 
     secs: 83
     nsecs: 300000000
-  frame_id: "map"
+  frame_id: "world"
 robots: 
   - 
     robot_name: "robot_0"

@@ -123,7 +123,8 @@ private:
     std::string singleRobotIdGoalTopic_; // A topic to send a goal to a robot specified by its id 
                                          // R.Desarzens
     std::string singleRobotName_;
-    
+   
+    std::string frame_id_; 
     bool single_robot_mode_;
     bool publish_routing_table_;
     bool got_map_ = false;
