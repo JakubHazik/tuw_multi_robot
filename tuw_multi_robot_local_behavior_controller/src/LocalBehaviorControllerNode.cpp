@@ -127,9 +127,7 @@ void LocalBehaviorControllerNode::updatePath() {
         double yaw{0.0};
         for ( size_t i = path_segment_start; i <= path_segment_end; i++ ) {
             pose_stamped.pose.position = route_.segments[i].end.position;
-            // Orientation is required by move_base framework so it is computed from segment's orientation     
-            // yaw=atan2(route_.segments[i].end.position.y-route_.segments[i].start.position.y,route_.segments[i].end.position.x-route_.segments[i].start.position.x); 
-            pose_stamped.pose.orientation = route_.segments[i].end.orientation; //tf::createQuaternionMsgFromYaw(yaw);
+            pose_stamped.pose.orientation = route_.segments[i].end.orientation; 
             path_.poses.push_back(pose_stamped);
         }
 
