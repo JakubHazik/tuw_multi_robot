@@ -51,7 +51,7 @@ int main ( int argc, char **argv ) {
         ros::spinOnce();
         node.monitorExecution();
         node.updateTimeout ( r.expectedCycleTime().toSec() );
-    }
+   }
 
     return 0;
 }

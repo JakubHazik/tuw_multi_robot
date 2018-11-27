@@ -1,0 +1,190 @@
+define hokuyolaser ranger
+(
+  sensor(       
+    # laser-specific properties
+    # factory settings for LMS200  
+    range [ 0.0  5.0 ]
+    fov 270.0
+    samples 270
+  )
+  model
+  (
+    # generic model properties
+    size [ 0.070 0.070 0.050 ] # dimensions from LMS200 data sheet  
+    color "blue"
+    obstacle_return 0
+  )
+)
+
+
+define floorplan model
+(
+  # sombre, sensible, artistic
+  color "gray30"
+
+  # most maps will need a bounding box
+  boundary 1
+
+  gui_nose 0
+  gui_grid 0
+
+  obstacle_return 1
+  gui_outline 0
+  gripper_return 0
+  fiducial_return 0
+  laser_return 1
+)
+
+
+define background model
+(
+  # sombre, sensible, artistic
+  color "red"
+
+  # most maps will need a bounding box
+  boundary 1
+
+  gui_nose 0
+  gui_grid 0
+
+  obstacle_return 0
+  gui_outline 0
+  gripper_return 0
+  fiducial_return 0
+  laser_return 1
+)
+
+
+# set the resolution of the underlying raytrace model in meters
+resolution 0.02
+
+interval_sim 100  # simulation timestep in milliseconds
+
+
+window
+( 
+  size [ 928 1028 ] # in pixels
+  scale 15.690   # pixels per meter
+  center [ 14.400  31.181 ]
+  rotate [ 0.000  767.000 ]
+
+  show_data 1              # 1=on 0=off
+)
+
+# load an environment bitmap
+
+floorplan
+( 
+  name "toupargel"
+  bitmap "map.pgm"
+  size [ 86.100 49.500 0.000]
+  pose [ 43.050 24.750 0.000 0.000 ]
+)
+
+define pioneer_base position 
+(
+  color "red"                   # Default color.
+  drive "diff"                  # Differential steering model.
+  gui_nose 0                    # Draw a nose on the robot so we can see which way it points
+  obstacle_return 0             # Can hit things.
+  ranger_return 0.500              # reflects sonar beams
+  blob_return 1                 # Seen by blobfinders  
+  fiducial_return 1             # Seen as "1" fiducial finders
+
+  localization "gps"             
+  localization_origin [0 0 0 0]   # Start odometry at (0, 0, 0).
+
+  # alternative odometric localization with simple error model
+  # localization "odom"              # Change to "gps" to have impossibly perfect, global odometry
+  # odom_error [ 0.05 0.05 0.1 ]    # Odometry error or slip in X, Y and Theta
+                                     # (Uniform random distribution)   
+
+  # four DOF kinematics limits
+  # [ xmin xmax ymin ymax zmin zmax amin amax ]        
+  velocity_bounds [-1 1 0 0 0 0 -45.0 45.0 ]          
+  acceleration_bounds [-1.0 1.0 0 0 0 0 -45 45.0 ]
+)
+
+define pioneer2dx_base_no_sonar pioneer_base
+(
+  # actual size
+  size [1.435 0.760 0.220] # sizes from MobileRobots' web site
+
+  # the pioneer's center of rotation is offset from its center of area
+  origin [-0.040 0.000 0.000 0.000]
+
+  # draw a nose on the robot so we can see which way it points
+  gui_nose 0
+
+  # estimated mass in KG
+  mass 23.0 
+)
+
+# as above, but with front sonar only
+define pioneer2dx_no_sonar pioneer2dx_base_no_sonar
+(  
+  # simplified Body shape:
+  block( 
+    points 4
+    point[0] [-0.38 -0.71]
+    point[1] [0.38 -0.71]
+    point[2] [0.38 0.71]
+    point[3] [-0.38  0.71]
+    z [0 0.22]
+  )
+)
+
+
+pioneer2dx_no_sonar 
+(
+  # can refer to the robot by this name
+  name "robot_0"
+  color "red" 
+  pose [ 3.607 38.379 0.000 -96.110 ] 
+  hokuyolaser(pose [ 0.225 0.000 -0.150 0.000 ])
+)
+
+pioneer2dx_no_sonar 
+(
+  # can refer to the robot by this name
+  name "robot_1"
+  color "green" 
+  pose [ 12.069 9.325 0.000 -2.594 ] 
+  hokuyolaser(pose [ 0.225 0.000 -0.150 0.000 ])
+)
+
+pioneer2dx_no_sonar 
+(
+  # can refer to the robot by this name
+  name "robot_2"
+  color "blue" 
+  pose [ 4.245 7.096 0.000 37.670 ] 
+  hokuyolaser(pose [ 0.225 0.000 -0.150 0.000 ])
+)
+
+pioneer2dx_no_sonar 
+(
+  # can refer to the robot by this name
+  name "robot_3"
+  color "yellow" 
+  pose [ 13.548 45.942 0.000 -92.209 ] 
+  hokuyolaser(pose [ 0.225 0.000 -0.150 0.000 ])
+)
+
+pioneer2dx_no_sonar 
+(
+  # can refer to the robot by this name
+  name "robot_4"
+  color "black" 
+  pose [ 4.402 11.474 0.000 -36.814 ] 
+  hokuyolaser(pose [ 0.225 0.000 -0.150 0.000 ])
+)
+
+pioneer2dx_no_sonar 
+(
+  # can refer to the robot by this name
+  name "robot_5"
+  color "black" 
+  pose [ 19.730 45.732 0.000 -92.234 ] 
+  hokuyolaser(pose [ 0.225 0.000 -0.150 0.000 ])
+)

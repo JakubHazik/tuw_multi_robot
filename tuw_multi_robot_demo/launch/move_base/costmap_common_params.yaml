@@ -6,7 +6,7 @@ footprint_padding: 0.00
 
 # Obstacle layer (see http://wiki.ros.org/costmap_2d/hydro/obstacles)
 observation_sources: base_scan
-base_scan: {sensor_frame: /base_laser_link, data_type: LaserScan, topic: base_scan, marking: true, clearing: true}
+base_scan: {sensor_frame: /robot_0/base_laser_link, data_type: LaserScan, topic: /robot_0/base_scan, marking: true, clearing: true}
 obstacle_range: 40 # Max distance at which measurement are taken into account for the costmap
 raytrace_range: 45 # Max distance at which to raytrace obstacles
 

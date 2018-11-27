@@ -1,5 +1,6 @@
 global_costmap:
   global_frame: /world
+  robot_base_frame: base_link 
   static_map: true
   rolling_window: false
   update_frequency: 0.1
