@@ -118,7 +118,7 @@ endif()
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES tuw_voronoi_graph
-  CATKIN_DEPENDS dynamic_reconfigure cv_bridge geometry_msgs nav_msgs roscpp tf tuw_multi_robot_msgs 
+  CATKIN_DEPENDS dynamic_reconfigure cv_bridge geometry_msgs nav_msgs roscpp tf tuw_multi_robot_msgs
 #  DEPENDS OpenCV
 )
 
@@ -217,12 +217,12 @@ add_dependencies(tuw_segment_to_graph_node ${${PROJECT_NAME}_EXPORTED_TARGETS} $
 #   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 # )
 
-## Mark executables and/or libraries for installation
-# install(TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_node
-#   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-#   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-#   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
+# Mark executables and/or libraries for installation
+install(TARGETS ${PROJECT_NAME}_node
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
 
 ## Mark cpp header files for installation
 # install(DIRECTORY include/${PROJECT_NAME}/
@@ -237,6 +237,7 @@ add_dependencies(tuw_segment_to_graph_node ${${PROJECT_NAME}_EXPORTED_TARGETS} $
 #   # myfile2
 #   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 # )
+
 
 #############
 ## Testing ##

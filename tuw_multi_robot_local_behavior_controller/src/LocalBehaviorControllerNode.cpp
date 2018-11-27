@@ -70,7 +70,7 @@ LocalBehaviorControllerNode::LocalBehaviorControllerNode ( ros::NodeHandle &n )
       pubGoal_ = n.advertise<geometry_msgs::PoseStamped> ( "local_goal", 1 );
       viapoints_srv_ = n.advertiseService("get_viapoints", &LocalBehaviorControllerNode::sendViapoints, this);
     } else {
-      pubPath_ = n.advertise<nav_msgs::Path> ( "path", 1 );
+      pubPath_ = n.advertise<nav_msgs::Path>("path",1);
     }
    
 
@@ -128,8 +128,8 @@ void LocalBehaviorControllerNode::updatePath() {
         for ( size_t i = path_segment_start; i <= path_segment_end; i++ ) {
             pose_stamped.pose.position = route_.segments[i].end.position;
             // Orientation is required by move_base framework so it is computed from segment's orientation     
-            yaw=atan2(route_.segments[i].end.position.y-route_.segments[i].start.position.y,route_.segments[i].end.position.x-route_.segments[i].start.position.x); 
-            pose_stamped.pose.orientation = tf::createQuaternionMsgFromYaw(yaw);
+            // yaw=atan2(route_.segments[i].end.position.y-route_.segments[i].start.position.y,route_.segments[i].end.position.x-route_.segments[i].start.position.x); 
+            pose_stamped.pose.orientation = route_.segments[i].end.orientation; //tf::createQuaternionMsgFromYaw(yaw);
             path_.poses.push_back(pose_stamped);
         }
 
@@ -155,7 +155,16 @@ void LocalBehaviorControllerNode::subRouteCb ( const tuw_multi_robot_msgs::Route
 }
 
 void LocalBehaviorControllerNode::subPoseCb ( const geometry_msgs::PoseWithCovarianceStampedConstPtr &_pose ) {
-    robot_pose_ = _pose->pose;
+    // Transform the robot's pose in the global frame  
+    geometry_msgs::PoseStamped pose_odom_frame, pose_world_frame;
+    pose_odom_frame.header=_pose->header; 
+    pose_odom_frame.pose=_pose->pose.pose; 
+ 
+    tf_listener_.transformPose(frame_id_, pose_odom_frame, pose_world_frame);
+    
+    // Coy the pose 
+    robot_pose_.pose = pose_world_frame.pose;
+    robot_pose_.covariance = _pose->pose.covariance;
     progress_monitor_.updateProgress(tuw::Point2D(robot_pose_.pose.position.x, robot_pose_.pose.position.y) );
 }
 

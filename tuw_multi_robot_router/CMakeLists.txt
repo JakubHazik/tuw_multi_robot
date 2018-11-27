@@ -16,7 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
   tuw_multi_robot_msgs
   tuw_voronoi_graph
 )
- 
+
 find_package(OpenCV 3 REQUIRED)
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -39,7 +39,7 @@ endif()
 #check for OpenMP
 #find_package(OpenMP)
 #if(OPENMP_FOUND)
-#message (STATUS "OpenMP found ${OpenMP_INCLUDE_DIRS}") 
+#message (STATUS "OpenMP found ${OpenMP_INCLUDE_DIRS}")
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}" )
 #else(OPENMP_FOUND)
@@ -136,7 +136,7 @@ endif()
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES tuw_multi_robot_router
+#  LIBRARIES ${PACKAGE_NAME}
   CATKIN_DEPENDS dynamic_reconfigure geometry_msgs nav_msgs roscpp tf tuw_multi_robot_msgs tuw_voronoi_graph
 #  DEPENDS system_lib
 )
@@ -177,8 +177,8 @@ add_library(${PROJECT_NAME}
  )
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
 
-add_executable(tuw_multi_robot_router_node src/router_node.cpp)
-target_link_libraries(tuw_multi_robot_router_node
+add_executable(${PROJECT_NAME}_node src/router_node.cpp)
+target_link_libraries(${PROJECT_NAME}_node
   ${catkin_LIBRARIES}
   ${PROJECT_NAME}
 )
@@ -221,12 +221,12 @@ add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EX
 #   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 # )
 
-## Mark executables and/or libraries for installation
-# install(TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_node
-#   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-#   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-#   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
+# Mark executables and/or libraries for installation
+install(TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_node
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
 
 ## Mark cpp header files for installation
 # install(DIRECTORY include/${PROJECT_NAME}/
