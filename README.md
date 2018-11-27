@@ -79,9 +79,3 @@ http://wiki.ros.org/tuw_multi_robot
 
 # Citations
 [1] [Binder, B. (2017). Spatio-Temporal Prioritized Planning (Master thesis), Retrieved from TU Wien Bibliothekssystem (Accession No. AC14520240)](http://repositum.tuwien.ac.at/obvutwhs/content/titleinfo/2400890)
-
-# Building Docker container
-
-<script src="https://gist.github.com/mendes-jose/56fa84f83958b7aa5e40f81ed389dbba.js"></script>
-
-<script src="https://gist.github.com/mendes-jose/78978073c118ad239d289cbd7a3deee2.js"></script>
