@@ -1,7 +1,7 @@
 <launch>
-  
+
   <!-- <arg name="robot_id" default="robot_0"/> -->
- 
+
   <node pkg="tuw_multi_robot_local_behavior_controller" type="tuw_local_behavior_controller_node" name="local_behavior" output="screen">
     <remap from="local_goal" to="move_base_simple/goal" />
     <remap from="route" to="$(optenv ROBOT_ID robot_0)/route" />
@@ -10,5 +10,10 @@
     <param name="publish_goal" value="true" />
     <param name="frame_id" value="world" />
   </node>
+
+  <!-- QUICK FIX -->
+  <node name="scan_throttler" type="throttle" pkg="topic_tools" args="messages /scan_fused 5 /$(optenv ROBOT_ID robot_0)/scan_fused" />
+  <node name="odom_throttler" type="throttle" pkg="topic_tools" args="messages /odom 5 /$(optenv ROBOT_ID robot_0)/odom" />
+  <node name="init_pose_relay" type="relay" pkg="topic_tools" args="/$(optenv ROBOT_ID robot_0)/initialpose initialpose" />
 
 </launch>
