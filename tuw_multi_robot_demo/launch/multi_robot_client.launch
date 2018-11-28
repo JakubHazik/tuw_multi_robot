@@ -1,11 +1,11 @@
 <launch>
   
-  <arg name="robot_id" default="robot_0"/>
+  <!-- <arg name="robot_id" default="robot_0"/> -->
  
   <node pkg="tuw_multi_robot_local_behavior_controller" type="tuw_local_behavior_controller_node" name="local_behavior" output="screen">
     <remap from="local_goal" to="move_base_simple/goal" />
-    <remap from="route" to="$(arg robot_id)/route" />
-    <param name="robot_name" value="$(arg robot_id)" />
+    <remap from="route" to="$(optenv ROBOT_ID robot_0)/route" />
+    <param name="robot_name" value="$(optenv ROBOT_ID robot_0)" />
     <param name="robot_radius" value="1.4" />
     <param name="publish_goal" value="true" />
     <param name="frame_id" value="world" />
