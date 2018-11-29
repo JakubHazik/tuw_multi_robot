@@ -21,6 +21,7 @@
     </group>
     <group unless="$(arg use_gdb)">
         <node pkg="tuw_multi_robot_router" type="tuw_multi_robot_router_node" name="multi_robot_router" output="screen">
+            <remap from="map" to="world/map"/>
             <param name="priority_rescheduling" value="$(arg priority_rescheduling)" />
             <param name="speed_rescheduling" value="$(arg speed_rescheduling)" />
             <param name="collision_resolver" value="$(arg collision_resolver)" />

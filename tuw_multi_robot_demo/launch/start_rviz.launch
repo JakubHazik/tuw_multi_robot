@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+
+<launch>
+
+<arg name="room"                                default="warehouse_5"      />
+
+<!-- start rviz -->
+<include file="$(find tuw_multi_robot_demo)/launch/rviz.launch">
+  <arg name="cfg" value="$(arg room)"/> 
+</include>
+
+</launch>
