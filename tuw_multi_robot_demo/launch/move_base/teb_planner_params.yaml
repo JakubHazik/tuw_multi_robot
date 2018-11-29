@@ -1,5 +1,6 @@
 TebLocalPlannerROS:
-
+ odom_topic: odom
+ map_frame: map
  # Trajectory
  teb_autosize: true
  dt_ref: 0.2 # Temporal resolution of the trajectory

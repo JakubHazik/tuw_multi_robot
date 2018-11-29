@@ -2,12 +2,12 @@
 
 <launch>
 
-<arg name="robot_name" default="robot_0"/>
+<arg name="robot_name" value="robot_1"/>
 <arg name="launch_move_base" default="false"/>
 
 <!-- launch the single robot related components -->
 <include file="$(find tuw_multi_robot_demo)/launch/local_controller.launch">
-    <arg name="launch_move_base" value="true"/>
+    <arg name="launch_move_base" value="false"/>
     <arg name="robot_name" value="$(arg robot_name)" />
 </include>
   

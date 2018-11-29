@@ -34,17 +34,10 @@
   </group>
 </group>
 
-<!-- multi robot planner -->  
+<!-- multi robot planner -->
 <group if="$(arg launch_multi_robot_route_planner)">
   <include file="$(find tuw_multi_robot_demo)/launch/multi_robot_route_planner.launch">
     <arg name="cfg" value="$(arg cfg)" />
-  </include>
-</group>
-
-<!-- start rviz -->
-<group if="$(arg launch_rviz)">
-  <include file="$(find tuw_multi_robot_demo)/launch/rviz.launch">
-  <arg name="cfg" value="$(arg room)"/> 
   </include>
 </group>
 

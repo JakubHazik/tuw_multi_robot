@@ -8,32 +8,25 @@
   <node pkg="tf" type="static_transform_publisher" name="tf_map_$(arg robot_id)" args="0 0 0 0 0 0 /$(arg robot_id)/map /$(arg robot_id)/odom 100"/>
 
   <node pkg="move_base" type="move_base" name="move_base" output="screen" >
-    <param name="controller_frequency" value="4.0" />
-    <param name="recovery_behavior_enabled" value="false" />
-    <param name="max_planning_retries" value="-1" />
-    <param name="clearing_rotation_allowed" value="false" />
-    <param name="planner_frequency" value="4.0" />
+
     <param name="SplinePlanner/viapoints_service" value="/$(arg robot_id)/get_viapoints" />
+    <!-- <param name="DRHMPPlannerROS/odom_topic" value="$(arg robot_id)/odom"/> -->
+    <!-- <param name="DRHMPPlannerROS/map_frame" value="$(arg robot_id)/odom"/> -->
+    <!-- <param name="global_costmap/robot_base_frame" value="$(arg robot_id)/base_link"/> -->
+    <!-- <param name="local_costmap/robot_base_frame" value="$(arg robot_id)/base_link"/> -->
 
     <remap from="/$(arg robot_id)/move_base_simple/goal" to="local_goal"/> 
     <remap from="/$(arg robot_id)/map" to="/map"/> 
-    <remap from="get_viapoints" to="/$(arg robot_id)/get_viapoints"/> 
-    
-    <!-- Costmaps -->
+    <remap from="get_viapoints" to="/$(arg robot_id)/get_viapoints"/>
+ 
+    <rosparam file="$(find tuw_multi_robot_demo)/launch/move_base/move_base_params.yaml" command="load"/>
     <rosparam file="$(find tuw_multi_robot_demo)/launch/move_base/costmap_common_params.yaml" command="load" ns="global_costmap" />
     <rosparam file="$(find tuw_multi_robot_demo)/launch/move_base/costmap_common_params.yaml" command="load" ns="local_costmap" />
     <rosparam file="$(find tuw_multi_robot_demo)/launch/move_base/local_costmap_params.yaml" command="load" />
     <rosparam file="$(find tuw_multi_robot_demo)/launch/move_base/global_costmap_params.yaml" command="load" />
-    <param name="global_costmap/robot_base_frame" value="$(arg robot_id)/base_link"/>
-    <param name="local_costmap/robot_base_frame" value="$(arg robot_id)/base_link"/>
-    <!-- Planners -->
     <rosparam file="$(find tuw_multi_robot_demo)/launch/move_base/spline_planner_params.yaml" command="load" />
-    <rosparam file="$(find tuw_multi_robot_demo)/launch/move_base/drhmp_planner_params.yaml" command="load" />
-    <param name="DRHMPPlannerROS/odom_topic" value="$(arg robot_id)/odom"/>
-    <param name="DRHMPPlannerROS/map_frame" value="$(arg robot_id)/odom"/>
- 
-    <param name="base_local_planner" value="drhmp_local_planner/DRHMPPlannerROS" />
-    <param name="base_global_planner" value="global_spline_planner/SplinePlanner"/>
+    <rosparam file="$(find tuw_multi_robot_demo)/launch/move_base/teb_planner_params.yaml" command="load" />
+
   </node>
 
 
