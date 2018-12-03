@@ -157,9 +157,18 @@ void LocalBehaviorControllerNode::subPoseCb ( const geometry_msgs::PoseWithCovar
     geometry_msgs::PoseStamped pose_odom_frame, pose_world_frame;
     pose_odom_frame.header=_pose->header; 
     pose_odom_frame.pose=_pose->pose.pose; 
+
+    try {
+      ros::Time now = ros::Time::now();
+      tf_listener_.waitForTransform(_pose->header.frame_id, frame_id_,
+                                now, ros::Duration(1.0));
  
-    tf_listener_.transformPose(frame_id_, pose_odom_frame, pose_world_frame);
-    
+      tf_listener_.transformPose(frame_id_, pose_odom_frame, pose_world_frame);
+    } catch (tf::TransformException ex){
+      ROS_ERROR("%s",ex.what());
+      ros::Duration(1.0).sleep();
+    }
+
     // Coy the pose 
     robot_pose_.pose = pose_world_frame.pose;
     robot_pose_.covariance = _pose->pose.covariance;
