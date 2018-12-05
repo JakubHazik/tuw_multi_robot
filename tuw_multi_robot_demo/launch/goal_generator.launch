@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+
+<launch>
+    <arg name="room" value="showroom" />      
+    
+    <!-- This node only reads the dxf and stores it a graph in a folder structrue usabe by the graph_generator -->
+    <!-- <node pkg="tuw_multi_robot_test" type="goal_generator" name="goal_generator_robot_0">
+        <param name="file" value="$(find tuw_multi_robot_demo)/cfg/goals/$(arg room)/goal_robot_0.txt" />
+        <param name="robot_id" value="robot_0" />
+        <param name="run_once" value="false" />
+    </node>-->
+
+    <node pkg="tuw_multi_robot_test" type="goal_generator" name="goal_generator_robot_1">
+        <param name="file" value="$(find tuw_multi_robot_demo)/cfg/goals/$(arg room)/goal_robot_0.txt" />
+        <param name="robot_id" value="robot_1" />
+        <param name="run_once" value="false" />
+    </node>
+
+</launch>
