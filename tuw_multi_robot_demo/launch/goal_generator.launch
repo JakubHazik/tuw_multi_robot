@@ -18,6 +18,6 @@
         <param name="odom_frame" value="robot_1/odom" />
         <param name="world_frame" value="robot_1/map" />
         <param name="run_once" value="false" />
-    </node> --> 
+    </node> -->
 
 </launch>

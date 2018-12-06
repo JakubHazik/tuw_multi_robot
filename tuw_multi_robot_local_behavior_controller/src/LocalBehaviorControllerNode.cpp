@@ -127,9 +127,7 @@ void LocalBehaviorControllerNode::updatePath() {
         double yaw{0.0};
         for ( size_t i = path_segment_start; i <= path_segment_end; i++ ) {
             pose_stamped.pose.position = route_.segments[i].end.position;
-            // Orientation is required by move_base framework so it is computed from segment's orientation     
-            // yaw=atan2(route_.segments[i].end.position.y-route_.segments[i].start.position.y,route_.segments[i].end.position.x-route_.segments[i].start.position.x); 
-            pose_stamped.pose.orientation = route_.segments[i].end.orientation; //tf::createQuaternionMsgFromYaw(yaw);
+            pose_stamped.pose.orientation = route_.segments[i].end.orientation; 
             path_.poses.push_back(pose_stamped);
         }
 
@@ -162,10 +160,10 @@ void LocalBehaviorControllerNode::subPoseCb ( const geometry_msgs::PoseWithCovar
 
     try {
       ros::Time now = ros::Time::now();
-      tf_listener_.waitForTransform(_pose->header.frame_id, frame_id_,
-                                now, ros::Duration(1.0));
- 
-      tf_listener_.transformPose(frame_id_, pose_odom_frame, pose_world_frame);
+      if(tf_listener_.waitForTransform(_pose->header.frame_id, frame_id_, now, ros::Duration(1.0)))
+        tf_listener_.transformPose(frame_id_, pose_odom_frame, pose_world_frame);
+      else
+        ROS_ERROR("Local behavior: transform between %s and %s is not available",_pose->header.frame_id.c_str(),frame_id_.c_str());
     } catch (tf::TransformException ex){
       ROS_ERROR("%s",ex.what());
       ros::Duration(1.0).sleep();
