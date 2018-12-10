@@ -9,9 +9,7 @@ Panels:
         - /Odometry2
         - /Odometry3
         - /Odometry3/Shape1
-        - /LaserScan1
         - /LaserScan2
-        - /LaserScan3
         - /Path4
       Splitter Ratio: 0.5
     Tree Height: 706
@@ -275,36 +273,6 @@ Visualization Manager:
       Unreliable: false
       Value: true
     - Alpha: 1
-      Autocompute Intensity Bounds: true
-      Autocompute Value Bounds:
-        Max Value: 10
-        Min Value: -10
-        Value: true
-      Axis: Z
-      Channel Name: intensity
-      Class: rviz/LaserScan
-      Color: 255; 255; 255
-      Color Transformer: Intensity
-      Decay Time: 0
-      Enabled: true
-      Invert Rainbow: false
-      Max Color: 255; 255; 255
-      Max Intensity: 4096
-      Min Color: 0; 0; 0
-      Min Intensity: 0
-      Name: LaserScan
-      Position Transformer: XYZ
-      Queue Size: 10
-      Selectable: true
-      Size (Pixels): 3
-      Size (m): 0.100000001
-      Style: Flat Squares
-      Topic: /robot_0/scan_fused
-      Unreliable: false
-      Use Fixed Frame: true
-      Use rainbow: false
-      Value: true
-    - Alpha: 1
       Autocompute Intensity Bounds: false
       Autocompute Value Bounds:
         Max Value: 10
@@ -345,14 +313,6 @@ Visualization Manager:
       Use Timestamp: false
       Value: true
     - Alpha: 1
-      Class: rviz/Polygon
-      Color: 25; 255; 0
-      Enabled: true
-      Name: Polygon
-      Topic: /move_base/local_costmap/footprint
-      Unreliable: false
-      Value: true
-    - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
         Max Value: 10
@@ -377,10 +337,18 @@ Visualization Manager:
       Size (Pixels): 3
       Size (m): 0.100000001
       Style: Flat Squares
-      Topic: /scan_fused
+      Topic: /robot_0/scan_fused
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
+      Value: true
+    - Alpha: 1
+      Class: rviz/Polygon
+      Color: 25; 255; 0
+      Enabled: true
+      Name: Polygon
+      Topic: /robot_0/footprint
+      Unreliable: false
       Value: true
     - Alpha: 1
       Buffer Length: 1
@@ -402,14 +370,14 @@ Visualization Manager:
       Radius: 0.0299999993
       Shaft Diameter: 0.100000001
       Shaft Length: 0.100000001
-      Topic: /move_base/TebLocalPlannerROS/global_plan
+      Topic: /robot_0/local_plan
       Unreliable: false
       Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
     Default Light: true
-    Fixed Frame: robot_1/map
+    Fixed Frame: robot_0/map
     Frame Rate: 30
   Name: root
   Tools:
@@ -418,7 +386,7 @@ Visualization Manager:
     - Class: rviz/Select
     - Class: rviz/Measure
     - Class: rviz/SetInitialPose
-      Topic: /robot_1/initialpose
+      Topic: /robot_0/initialpose
     - Class: rviz/SetGoal
       Topic: /goal
     - Class: rviz/PublishPoint
@@ -429,14 +397,14 @@ Visualization Manager:
       Robot Goals:
         {}
       Robot Names:
-        Robot 0: robot_1
+        Robot 0: robot_0
         Robot 1: robot_1
         Robot 2: robot_2
   Value: true
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 17.1436958
+      Distance: 20.7865543
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1

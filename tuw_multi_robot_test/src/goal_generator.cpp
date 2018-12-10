@@ -25,7 +25,7 @@ double distance2d(const double & x1, const double & y1, const double & x2, const
 }
 
 
-void parseWaypointsFile(ros::NodeHandle& nh, std::vector<geometry_msgs::PoseStamped>& goals_list)
+void parseWaypointsFile(ros::NodeHandle& nh, std::vector<geometry_msgs::PoseStamped>& goals_list, const std::string & _world_frame)
 {
   //csv file containing one waypoint/line in the formalism : x,y (meter),yaw (degree)
   //in frame map
@@ -73,14 +73,20 @@ int main(int argc, char** argv){
   ros::NodeHandle nh("~");
   std::vector<geometry_msgs::PoseStamped> goals_list;
 
-  parseWaypointsFile(nh, goals_list);
 
   // ID of the robot associated with the goal generator
   std::string robot_id;
   nh.param<std::string>("robot_id", robot_id, "robot_0");
+  // Frames
+  std::string odom_frame;
+  nh.param<std::string>("odom_frame", odom_frame, "odom");
+  std::string world_frame;
+  nh.param<std::string>("world_frame", world_frame, "map");
   // Run in loop or not
   bool run_once;
   nh.param<bool>("run_once", run_once, true);
+
+  parseWaypointsFile(nh, goals_list, world_frame);
 
   ros::Subscriber robotPoseSub = nh.subscribe("/" + robot_id + "/odom", 1, odomCallback);
   ros::Publisher goalPub = nh.advertise<tuw_multi_robot_msgs::RobotGoals>("/goal_id",1); 
@@ -109,17 +115,19 @@ int main(int argc, char** argv){
 
     // Transform the robot's pose in the global frame  
     try {
-      tf_listener.waitForTransform(pose_odom_frame.header.frame_id, "robot_1/map",
+      tf_listener.waitForTransform(pose_odom_frame.header.frame_id, world_frame,
                                 ros::Time::now(), ros::Duration(1.0));
 
       pose_world_frame.header.stamp=ros::Time::now(); 
-      tf_listener.transformPose("robot_1/map", pose_odom_frame, pose_world_frame);
+      tf_listener.transformPose(world_frame, pose_odom_frame, pose_world_frame);
     } catch (tf::TransformException ex) {
       ROS_ERROR("%s",ex.what());
       ros::Duration(1.0).sleep();
     }
 
-    // ROS_ERROR("%f",distance2d(goal.position.x,goal.position.y,pose_world_frame.pose.position.x,pose_world_frame.pose.position.y));
+    
+    ROS_DEBUG("%f",distance2d(goal.position.x,goal.position.y,pose_world_frame.pose.position.x,pose_world_frame.pose.position.y));
+
     if(distance2d(goal.position.x,goal.position.y,pose_world_frame.pose.position.x,pose_world_frame.pose.position.y) < 0.4) {
       ros::Duration(2.0).sleep();
       goal_index++;

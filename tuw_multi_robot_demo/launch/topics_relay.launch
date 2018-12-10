@@ -5,5 +5,4 @@
   <node name="local_costmap_throttler" type="throttle" pkg="topic_tools" args="bytes /move_base/local_costmap/ 1024 1.0 /$(optenv ROBOT_ID robot_0)/local_costmap" />
   <node name="footprint_throttler" type="throttle" pkg="topic_tools" args="messages /move_base/local_costmap/footprint 5 /$(optenv ROBOT_ID robot_0)/local_costmap" />
   <node name="init_pose_relay" type="relay" pkg="topic_tools" args="$(optenv ROBOT_ID robot_0)/initialpose initialpose" />
-
 </launch>
