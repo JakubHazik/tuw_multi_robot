@@ -10,7 +10,7 @@
 <arg name="launch_graph_generator"              default="true"      />
 <arg name="cfg"                                 default="$(optenv PARAMETERS_SET client_0)"   />
 <arg name="load_segments"                       default="false"     />
-<arg name="map_name"                            default="$(optenv WAREHOUSE_MAP map_0_0)"          />
+<arg name="map_name"                            default="$(optenv WAREHOUSE_MAP map_0_1)"          />
 
 <!-- map server -->
 <group if="$(arg launch_map_server)">
