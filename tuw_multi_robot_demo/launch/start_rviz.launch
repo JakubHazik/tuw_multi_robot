@@ -2,7 +2,7 @@
 
 <launch>
 
-<arg name="room"                                default="warehouse_5"      />
+<arg name="room"                                default="client_0"      />
 
 <!-- start rviz -->
 <include file="$(find tuw_multi_robot_demo)/launch/rviz.launch">
