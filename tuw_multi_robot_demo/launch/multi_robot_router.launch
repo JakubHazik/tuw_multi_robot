@@ -3,14 +3,14 @@
 <launch>
 
 
-<arg name="room"                                default="$(optenv PARAMETERS_SET client_0)"     />
+<arg name="room"                                default="$(optenv PARAMETERS_SET showroom)"     />
 <arg name="launch_rviz"                         default="true"      />
 <arg name="launch_map_server"                   default="true"      />
 <arg name="launch_multi_robot_route_planner"    default="true"      />
 <arg name="launch_graph_generator"              default="true"      />
-<arg name="cfg"                                 default="$(optenv PARAMETERS_SET client_0)"   />
+<arg name="cfg"                                 default="$(optenv PARAMETERS_SET default)"   />
 <arg name="load_segments"                       default="false"     />
-<arg name="map_name"                            default="$(optenv WAREHOUSE_MAP map_0_0)"          />
+<arg name="map_name"                            default="$(optenv WAREHOUSE_MAP map)"          />
 
 <!-- map server -->
 <group if="$(arg launch_map_server)">
