@@ -42,4 +42,6 @@
   </include>
 </group>
 
+<node pkg="static_tf_tools" type="static_tf_server" name="static_tf_server"/>
+  
 </launch>
