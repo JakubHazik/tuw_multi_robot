@@ -162,8 +162,10 @@ void LocalBehaviorControllerNode::subPoseCb ( const geometry_msgs::PoseWithCovar
       ros::Time now = ros::Time::now();
       if(tf_listener_.waitForTransform(_pose->header.frame_id, frame_id_, now, ros::Duration(1.0)))
         tf_listener_.transformPose(frame_id_, pose_odom_frame, pose_world_frame);
-      else
+      else {
         ROS_ERROR("Local behavior: transform between %s and %s is not available",_pose->header.frame_id.c_str(),frame_id_.c_str());
+        return;
+      } 
     } catch (tf::TransformException ex){
       ROS_ERROR("%s",ex.what());
       ros::Duration(1.0).sleep();
