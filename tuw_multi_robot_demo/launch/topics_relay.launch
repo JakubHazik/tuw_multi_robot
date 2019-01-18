@@ -1,15 +1,15 @@
 <launch>
-  <node name="scan_throttler" type="throttle" pkg="topic_topics_frame_converter" args="messages /scan_fused 5 /$(optenv ROBOT_ID robot_0)/scan_fused" />
-  <node name="map_throttler" type="throttle" pkg="topic_topics_frame_converter" args="messages /map 5 /$(optenv ROBOT_ID robot_0)/map" />
-  <node name="odom_throttler" type="throttle" pkg="topic_topics_frame_converter" args="messages /odom 5 /$(optenv ROBOT_ID robot_0)/odom" />
-  <node name="local_costmap_throttler" type="throttle" pkg="topic_topics_frame_converter" args="messages /move_base/local_costmap/costmap 1 /$(optenv ROBOT_ID robot_0)/local_costmap" />
-  <node name="footprint_throttler" type="throttle" pkg="topic_topics_frame_converter" args="messages /move_base/local_costmap/footprint 5 /$(optenv ROBOT_ID robot_0)/footprint" />
-  <node name="global_plan_throttler" type="throttle" pkg="topic_topics_frame_converter" args="messages /move_base/TebLocalPlannerROS/global_plan 5 /$(optenv ROBOT_ID robot_0)/global_plan" /> 
-  <node name="local_plan_throttler" type="throttle" pkg="topic_topics_frame_converter" args="messages /move_base/TebLocalPlannerROS/local_plan 5 /$(optenv ROBOT_ID robot_0)/local_plan" /> 
-  <node name="init_pose_relay" type="relay" pkg="topic_topics_frame_converter" args="$(optenv ROBOT_ID robot_0)/initialpose initialpose" />
+  <node name="scan_throttler" type="throttle" pkg="topic_topic_frame_converter" args="messages /scan_fused 5 /$(optenv ROBOT_ID robot_0)/scan_fused" />
+  <node name="map_throttler" type="throttle" pkg="topic_topic_frame_converter" args="messages /map 5 /$(optenv ROBOT_ID robot_0)/map" />
+  <node name="odom_throttler" type="throttle" pkg="topic_topic_frame_converter" args="messages /odom 5 /$(optenv ROBOT_ID robot_0)/odom" />
+  <node name="local_costmap_throttler" type="throttle" pkg="topic_topic_frame_converter" args="messages /move_base/local_costmap/costmap 1 /$(optenv ROBOT_ID robot_0)/local_costmap" />
+  <node name="footprint_throttler" type="throttle" pkg="topic_topic_frame_converter" args="messages /move_base/local_costmap/footprint 5 /$(optenv ROBOT_ID robot_0)/footprint" />
+  <node name="global_plan_throttler" type="throttle" pkg="topic_topic_frame_converter" args="messages /move_base/TebLocalPlannerROS/global_plan 5 /$(optenv ROBOT_ID robot_0)/global_plan" /> 
+  <node name="local_plan_throttler" type="throttle" pkg="topic_topic_frame_converter" args="messages /move_base/TebLocalPlannerROS/local_plan 5 /$(optenv ROBOT_ID robot_0)/local_plan" /> 
+  <node name="init_pose_relay" type="relay" pkg="topic_topic_frame_converter" args="$(optenv ROBOT_ID robot_0)/initialpose initialpose" />
 
 
-  <node pkg="topics_frame_converter" type="frame_converter_node" name="frame_converter_odom" >
+  <node pkg="topic_frame_converter" type="frame_converter_node" name="frame_converter_odom" >
     <rosparam subst_value="true">
         message_type: "nav_msgs::Odometry"
         input_topic: "/$(optenv ROBOT_ID robot_0)/odom"
@@ -18,7 +18,7 @@
     </rosparam>
   </node>
   
-  <node pkg="topics_frame_converter" type="frame_converter_node" name="frame_converter_laser_scan" >
+  <node pkg="topic_frame_converter" type="frame_converter_node" name="frame_converter_laser_scan" >
     <rosparam subst_value="true">
         message_type: "sensor_msgs::LaserScan"
         input_topic: "/$(optenv ROBOT_ID robot_0)/scan_fused"
@@ -27,7 +27,7 @@
     </rosparam>
   </node>
 
-  <node pkg="topics_frame_converter" type="frame_converter_node" name="frame_converter_footprint" >
+  <node pkg="topic_frame_converter" type="frame_converter_node" name="frame_converter_footprint" >
     <rosparam subst_value="true">
         message_type: "geometry_msgs::PolygonStamped"
         input_topic: "/$(optenv ROBOT_ID robot_0)/footprint"
@@ -36,7 +36,7 @@
     </rosparam>
   </node>
 
-  <node pkg="topics_frame_converter" type="frame_converter_node" name="frame_converter_map" >
+  <node pkg="topic_frame_converter" type="frame_converter_node" name="frame_converter_map" >
     <rosparam subst_value="true">
         message_type: "nav_msgs::OccupancyGrid"
         input_topic: "/$(optenv ROBOT_ID robot_0)/map"
@@ -45,7 +45,7 @@
     </rosparam>
   </node>
   
-  <node pkg="topics_frame_converter" type="frame_converter_node" name="frame_converter_local_costmap" >
+  <node pkg="topic_frame_converter" type="frame_converter_node" name="frame_converter_local_costmap" >
     <rosparam subst_value="true">
         message_type: "nav_msgs::OccupancyGrid"
         input_topic: "/$(optenv ROBOT_ID robot_0)/local_costmap"
@@ -54,7 +54,7 @@
     </rosparam>
   </node>
 
-  <node pkg="topics_frame_converter" type="frame_converter_node" name="frame_converter_global_plan" >
+  <node pkg="topic_frame_converter" type="frame_converter_node" name="frame_converter_global_plan" >
     <rosparam subst_value="true">
         message_type: "nav_msgs::Path"
         input_topic: "/$(optenv ROBOT_ID robot_0)/global_plan"
@@ -63,7 +63,7 @@
     </rosparam>
   </node>
   
-  <node pkg="topics_frame_converter" type="frame_converter_node" name="frame_converter_local_plan" >
+  <node pkg="topic_frame_converter" type="frame_converter_node" name="frame_converter_local_plan" >
     <rosparam subst_value="true">
         message_type: "nav_msgs::Path"
         input_topic: "/$(optenv ROBOT_ID robot_0)/local_plan"
