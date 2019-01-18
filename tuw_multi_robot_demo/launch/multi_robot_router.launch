@@ -2,7 +2,6 @@
 
 <launch>
 
-
 <arg name="room"                                default="$(optenv PARAMETERS_SET showroom)"     />
 <arg name="launch_rviz"                         default="true"      />
 <arg name="launch_map_server"                   default="true"      />

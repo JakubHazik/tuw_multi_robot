@@ -31,10 +31,10 @@
 
 namespace  tuw {
 
-RouteProgressMonitor::Segment::Segment ( double x0, double y0, double x1, double y1, double width )
-    : l ( x0, y0, x1, y1 )
-    , width ( width )
-    , state ( SEGMENT_STATE_AHEAD ){
+RouteProgressMonitor::Segment::Segment(double x0, double y0, double x1, double y1, double width)
+    : l(x0, y0, x1, y1)
+    , width(width)
+    , state(SEGMENT_STATE_AHEAD){
 }
 
 RouteProgressMonitor::RouteProgressMonitor()

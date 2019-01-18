@@ -45,63 +45,64 @@
 
 namespace tuw_multi_robot_route_to_path
 {
-class LocalBehaviorControllerNode
-{
-public:
-  LocalBehaviorControllerNode(ros::NodeHandle &n);
 
-  // ROS:
-  ros::NodeHandle n_;        ///< Node handler to the root node
-  ros::NodeHandle n_param_;  ///< Node handler to the current node
-  std::unique_ptr<ros::Rate> rate_;
-
-  void publishRobotInfo();
-private:
-  void updatePath();
-  bool sendViapoints(ifollow_nav_msgs::GetViapoints::Request  &req, ifollow_nav_msgs::GetViapoints::Response &res);
-
-  ros::Publisher pubPath_;
-  ros::Publisher pubRobotInfo_;
-  ros::Publisher pubGoal_;
-  ros::Subscriber subRoute_;
-  ros::Subscriber subCtrlState_;
-  ros::Subscriber subPose_;
-  ros::Subscriber subRobotInfo_;
-
-  // ROS Topic names
-  double update_rate_;
-  std::string frame_id_;
-  std::string robot_name_;
-  double robot_radius_;
-  double robotDefaultRadius_ = 0.6;
-  bool publish_goal_;
-
-  // Tf 
-  tf::TransformListener tf_listener_;
-  
-  geometry_msgs::PoseWithCovariance robot_pose_;
-  tuw_multi_robot_msgs::Route route_;
-  tuw_multi_robot_msgs::RobotInfo robot_info_;
-  tuw_nav_msgs::ControllerState ctrl_state_;
-  nav_msgs::Path path_;
-  
-  int path_segment_start; /// route segment idx used to define the path start point
-  int path_segment_end;   /// route segment idx used to define the path end point
-
-  void subCtrlCb(const tuw_nav_msgs::ControllerStateConstPtr& msg);
-  void subPoseCb(const geometry_msgs::PoseWithCovarianceStampedConstPtr& _pose);
-  void subRobotInfoCb(const tuw_multi_robot_msgs::RobotInfo::ConstPtr& _robot_info);
-  void subRouteCb(const tuw_multi_robot_msgs::Route::ConstPtr& _route);
-
-  ros::ServiceServer viapoints_srv_;
-
-  //RobotRouteToPath converter_;
-  //RobotStateObserver observer_;
-  int robot_step_;
-  std::map<std::string, int> robot_steps_;
-  
-  tuw::RouteProgressMonitor progress_monitor_;
-};
+  class LocalBehaviorControllerNode
+  {
+    public:
+      LocalBehaviorControllerNode(ros::NodeHandle &n);
+    
+      // ROS:
+      ros::NodeHandle n_;        ///< Node handler to the root node
+      ros::NodeHandle n_param_;  ///< Node handler to the current node
+      std::unique_ptr<ros::Rate> rate_;
+    
+      void publishRobotInfo();
+    private:
+      void updatePath();
+      bool sendViapoints(ifollow_nav_msgs::GetViapoints::Request  &req, ifollow_nav_msgs::GetViapoints::Response &res);
+    
+      ros::Publisher pubPath_;
+      ros::Publisher pubRobotInfo_;
+      ros::Publisher pubGoal_;
+      ros::Subscriber subRoute_;
+      ros::Subscriber subCtrlState_;
+      ros::Subscriber subPose_;
+      ros::Subscriber subRobotInfo_;
+    
+      // ROS Topic names
+      double update_rate_;
+      std::string frame_id_;
+      std::string robot_name_;
+      double robot_radius_;
+      double robotDefaultRadius_ = 0.6;
+      bool publish_goal_;
+    
+      // Tf 
+      tf::TransformListener tf_listener_;
+      
+      geometry_msgs::PoseWithCovariance robot_pose_;
+      tuw_multi_robot_msgs::Route route_;
+      tuw_multi_robot_msgs::RobotInfo robot_info_;
+      tuw_nav_msgs::ControllerState ctrl_state_;
+      nav_msgs::Path path_;
+      
+      int path_segment_start; /// route segment idx used to define the path start point
+      int path_segment_end;   /// route segment idx used to define the path end point
+    
+      void subCtrlCb(const tuw_nav_msgs::ControllerStateConstPtr& msg);
+      void subPoseCb(const geometry_msgs::PoseWithCovarianceStampedConstPtr& _pose);
+      void subRobotInfoCb(const tuw_multi_robot_msgs::RobotInfo::ConstPtr& _robot_info);
+      void subRouteCb(const tuw_multi_robot_msgs::Route::ConstPtr& _route);
+    
+      ros::ServiceServer viapoints_srv_;
+    
+      //RobotRouteToPath converter_;
+      //RobotStateObserver observer_;
+      int robot_step_;
+      std::map<std::string,int> robot_steps_;
+      
+      tuw::RouteProgressMonitor progress_monitor_;
+  };
 
 }  // namespace tuw_multi_robot_route_to_path
 
