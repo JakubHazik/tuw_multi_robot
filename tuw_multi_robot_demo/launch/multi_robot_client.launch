@@ -6,7 +6,7 @@
     <param name="robot_name" value="$(optenv ROBOT_ID ilogistics_2_0000)" />
     <param name="robot_radius" value="1.4" />
     <param name="frame_id" value="world" />
-    <param name="update_rate" value="0.5"/>
+    <param name="update_rate" value="3"/>
     <param name="publish_goal" value="true" />
   </node>
 
