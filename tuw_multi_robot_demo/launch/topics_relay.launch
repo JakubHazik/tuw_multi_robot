@@ -1,8 +1,102 @@
 <launch>
   <node name="scan_throttler" type="throttle" pkg="topic_tools" args="messages /scan_fused 5 /$(optenv ROBOT_ID robot_0)/scan_fused" />
+  <node name="map_throttler" type="throttle" pkg="topic_tools" args="messages /map 5 /$(optenv ROBOT_ID robot_0)/map" />
   <node name="odom_throttler" type="throttle" pkg="topic_tools" args="messages /odom 5 /$(optenv ROBOT_ID robot_0)/odom" />
-  <node name="global_plan_throttler" type="throttle" pkg="topic_tools" args="messages /move_base/TebLocalPlannerROS/global_plan 5 /$(optenv ROBOT_ID robot_0)/global_plan" />
-  <node name="local_costmap_throttler" type="throttle" pkg="topic_tools" args="bytes /move_base/local_costmap/ 1024 1.0 /$(optenv ROBOT_ID robot_0)/local_costmap" />
+  <node name="local_costmap_throttler" type="throttle" pkg="topic_tools" args="messages /move_base/local_costmap/costmap 1 /$(optenv ROBOT_ID robot_0)/local_costmap" />
   <node name="footprint_throttler" type="throttle" pkg="topic_tools" args="messages /move_base/local_costmap/footprint 5 /$(optenv ROBOT_ID robot_0)/footprint" />
+  <node name="global_plan_throttler" type="throttle" pkg="topic_tools" args="messages /move_base/TebLocalPlannerROS/global_plan 5 /$(optenv ROBOT_ID robot_0)/global_plan" /> 
+  <node name="local_plan_throttler" type="throttle" pkg="topic_tools" args="messages /move_base/TebLocalPlannerROS/local_plan 5 /$(optenv ROBOT_ID robot_0)/local_plan" /> 
   <node name="init_pose_relay" type="relay" pkg="topic_tools" args="$(optenv ROBOT_ID robot_0)/initialpose initialpose" />
+
+
+  <node pkg="topic_frame_converter" type="frame_converter_node" name="frame_converter_odom" >
+    <rosparam subst_value="true">
+        message_type: "nav_msgs::Odometry"
+        input_topic: "/$(optenv ROBOT_ID robot_0)/odom"
+        output_topic: "/$(optenv ROBOT_ID robot_0)/global/odom"
+        output_frame: "world"
+    </rosparam>
+  </node>
+  
+  <node pkg="topic_frame_converter" type="frame_converter_node" name="frame_converter_laser_scan" >
+    <rosparam subst_value="true">
+        message_type: "sensor_msgs::LaserScan"
+        input_topic: "/$(optenv ROBOT_ID robot_0)/scan_fused"
+        output_topic: "/scan_fused_pcl"
+        output_frame: "world"
+    </rosparam>
+  </node>
+
+  <node pkg="topic_frame_converter" type="frame_converter_node" name="frame_converter_footprint" >
+    <rosparam subst_value="true">
+        message_type: "geometry_msgs::PolygonStamped"
+        input_topic: "/$(optenv ROBOT_ID robot_0)/footprint"
+        output_topic: "/$(optenv ROBOT_ID robot_0)/global/footprint"
+        output_frame: "world"
+    </rosparam>
+  </node>
+
+  <node pkg="topic_frame_converter" type="frame_converter_node" name="frame_converter_map" >
+    <rosparam subst_value="true">
+        message_type: "nav_msgs::OccupancyGrid"
+        input_topic: "/$(optenv ROBOT_ID robot_0)/map"
+        output_topic: "/$(optenv ROBOT_ID robot_0)/global/map"
+        output_frame: "world"
+    </rosparam>
+  </node>
+  
+  <node pkg="topic_frame_converter" type="frame_converter_node" name="frame_converter_local_costmap" >
+    <rosparam subst_value="true">
+        message_type: "nav_msgs::OccupancyGrid"
+        input_topic: "/$(optenv ROBOT_ID robot_0)/local_costmap"
+        output_topic: "/$(optenv ROBOT_ID robot_0)/global/local_costmap"
+        output_frame: "world"
+    </rosparam>
+  </node>
+
+  <node pkg="topic_frame_converter" type="frame_converter_node" name="frame_converter_global_plan" >
+    <rosparam subst_value="true">
+        message_type: "nav_msgs::Path"
+        input_topic: "/$(optenv ROBOT_ID robot_0)/global_plan"
+        output_topic: "/$(optenv ROBOT_ID robot_0)/global/global_plan"
+        output_frame: "world"
+    </rosparam>
+  </node>
+  
+  <node pkg="topic_frame_converter" type="frame_converter_node" name="frame_converter_local_plan" >
+    <rosparam subst_value="true">
+        message_type: "nav_msgs::Path"
+        input_topic: "/$(optenv ROBOT_ID robot_0)/local_plan"
+        output_topic: "/$(optenv ROBOT_ID robot_0)/global/local_plan"
+        output_frame: "world"
+    </rosparam>
+  </node>
+
+
+  <!-- Convert laserscan -->
+  <node pkg="pointcloud_to_laserscan" type="pointcloud_to_laserscan_node" name="pointcloud_to_laserscan">
+    <remap from="/cloud_in" to="scan_fused_pcl"/>
+    <remap from="/scan" to="/$(optenv ROBOT_ID robot_0)/global/scan_fused"/>
+    <rosparam>
+        target_frame: world # Leave disabled to output scan in pointcloud frame
+        transform_tolerance: 0.01
+        min_height: 0.0
+        max_height: 1.0
+
+        angle_min: -3.14
+        angle_max: 3.14 
+        angle_increment: 0.00436000013724
+        scan_time: 0.025
+        range_min: 0.01
+        range_max: 50.0
+        use_inf: true
+
+        # Concurrency level, affects number of pointclouds queued for processing, thread number governed by nodelet manager
+        # 0 : Detect number of cores
+        # 1 : Single threaded
+        # 2->inf : Parallelism level
+        concurrency_level: 1
+    </rosparam>
+  </node>
+
 </launch>

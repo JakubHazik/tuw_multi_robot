@@ -2,7 +2,6 @@
 
 <launch>
 
-
 <arg name="room"                                default="$(optenv PARAMETERS_SET showroom)"     />
 <arg name="launch_rviz"                         default="true"      />
 <arg name="launch_map_server"                   default="true"      />
@@ -42,4 +41,6 @@
   </include>
 </group>
 
+<node pkg="static_tf_tools" type="static_tf_server" name="static_tf_server"/>
+  
 </launch>

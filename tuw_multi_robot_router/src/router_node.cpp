@@ -42,7 +42,7 @@ int main ( int argc, char **argv ) {
     ros::init ( argc, argv, "tuw_multi_robot_router" ); /// initializes the ros node with default name
     ros::NodeHandle n;
 
-    ros::Rate r ( 1 );
+    ros::Rate r ( 5 );
 
     multi_robot_router::Router_Node node ( n );
 

@@ -1,14 +1,13 @@
 <launch>
 
-  <!-- <arg name="robot_id" default="robot_0"/> -->
-
-  <node pkg="tuw_multi_robot_local_behavior_controller" type="tuw_local_behavior_controller_node" name="local_behavior" output="screen">
+  <node pkg="tuw_multi_robot_local_behavior_controller" type="tuw_local_behavior_controller_node" name="local_behavior" output="screen" respawn="true" >
     <remap from="local_goal" to="move_base_simple/goal" />
-    <remap from="route" to="$(optenv ROBOT_ID robot_0)/route" />
-    <param name="robot_name" value="$(optenv ROBOT_ID robot_0)" />
+    <remap from="route" to="$(optenv ROBOT_ID ilogistics_2_0000)/route" />
+    <param name="robot_name" value="$(optenv ROBOT_ID ilogistics_2_0000)" />
     <param name="robot_radius" value="1.4" />
-    <param name="publish_goal" value="true" />
     <param name="frame_id" value="world" />
+    <param name="update_rate" value="3"/>
+    <param name="publish_goal" value="true" />
   </node>
 
 </launch>

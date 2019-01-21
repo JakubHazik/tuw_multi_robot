@@ -67,14 +67,15 @@ LocalBehaviorControllerNode::LocalBehaviorControllerNode ( ros::NodeHandle &n )
 
     // Either you publish and the goal and the navigation stack retreive the path through a service. Either you send the full path.
     if(publish_goal_) {
+      ROS_INFO("Local behavior : starting goal publishing mode");
       pubGoal_ = n.advertise<geometry_msgs::PoseStamped> ( "local_goal", 1 );
       viapoints_srv_ = n.advertiseService("get_viapoints", &LocalBehaviorControllerNode::sendViapoints, this);
     } else {
+      ROS_INFO("Local behavior : starting path publishing mode");
       pubPath_ = n.advertise<nav_msgs::Path>("path",1);
     }
    
-
-    ros::Rate r ( update_rate_ );
+    ros::Rate r(update_rate_);
 
     while ( ros::ok() ) {
         r.sleep();
@@ -87,34 +88,35 @@ void LocalBehaviorControllerNode::updatePath() {
 
     bool valid = true;
     size_t last_active_segment = 0;
-    // go through all segments in the route
-    for ( size_t i = path_segment_start; i < route_.segments.size(); i++ ) {
-        const tuw_multi_robot_msgs::RouteSegment &seg = route_.segments[i];
-        // go through all preconditions and check if they are fulfilled
-        for ( auto&& prec : seg.preconditions ) {
+    // Go through all segments in the route
+    for(size_t i = path_segment_start; i < route_.segments.size(); i++) {
+        const tuw_multi_robot_msgs::RouteSegment &seg = route_.segments.at(i);
+        // Go through all preconditions and check if they are fulfilled
+        for(auto&& prec : seg.preconditions) {
             std::string other_robot_name = prec.robot_id;
             auto other_robot = robot_steps_.find(other_robot_name);
             if(other_robot == robot_steps_.end()) {
-                // no robot info received for this robot
+                // No robot info received for this robot
                 valid = false;
             } else {
                 int other_robot_process_requiered = prec.current_route_segment;
                 int other_robot_process_received = robot_steps_[other_robot_name];
                 if(other_robot_process_received < other_robot_process_requiered){
-                    // robot is not far enoth to process further
+                    // Robot is not far enough to process further
                     valid = false;
                 }
             }
         }
 
-        // add segments to path as long as the prec. are fulfilled
-        if ( valid ) {
+        // Add segments to path as long as the preconditions are fulfilled
+        if(valid) {
             last_active_segment = i;
         } else {
             break;
         }
     }
-    if ( last_active_segment > path_segment_end ) {
+
+    if(last_active_segment > path_segment_end) {
         path_segment_end = last_active_segment;
         path_segment_start = progress_monitor_.getProgress() + 1;
         geometry_msgs::PoseStamped pose_stamped;
@@ -125,17 +127,20 @@ void LocalBehaviorControllerNode::updatePath() {
         
         path_.poses.clear();
         double yaw{0.0};
-        for ( size_t i = path_segment_start; i <= path_segment_end; i++ ) {
-            pose_stamped.pose.position = route_.segments[i].end.position;
-            pose_stamped.pose.orientation = route_.segments[i].end.orientation; 
+        for(size_t i = path_segment_start; i <= path_segment_end; i++) {
+            pose_stamped.pose.position = route_.segments.at(i).end.position;
+            pose_stamped.pose.orientation = route_.segments.at(i).end.orientation; 
             path_.poses.push_back(pose_stamped);
         }
 
+        // Send the path or goal to the robot
         if(!publish_goal_) {
-          pubPath_.publish(path_); 
-        } else { 
-          // Publish last point as goal
-          pubGoal_.publish(path_.poses.back());
+            pubPath_.publish(path_); 
+        } else {
+            if(!path_.poses.empty()) 
+                pubGoal_.publish(path_.poses.back());
+            else 
+                ROS_WARN("Local behavior : no goal published, because path is empty");
         }
     }
     
@@ -153,29 +158,32 @@ void LocalBehaviorControllerNode::subRouteCb ( const tuw_multi_robot_msgs::Route
 }
 
 void LocalBehaviorControllerNode::subPoseCb ( const geometry_msgs::PoseWithCovarianceStampedConstPtr &_pose ) {
-    // Transform the robot's pose in the global frame  
+
+    // Transform the robot's pose in the global frame and send it to the progress monitor
     geometry_msgs::PoseStamped pose_odom_frame, pose_world_frame;
     pose_odom_frame.header=_pose->header; 
     pose_odom_frame.pose=_pose->pose.pose; 
 
     try {
       ros::Time now = ros::Time::now();
-      if(tf_listener_.waitForTransform(_pose->header.frame_id, frame_id_, now, ros::Duration(1.0)))
+      if(tf_listener_.waitForTransform(_pose->header.frame_id, frame_id_, now, ros::Duration(1.0))) {
         tf_listener_.transformPose(frame_id_, pose_odom_frame, pose_world_frame);
-      else
+        robot_pose_.pose = pose_world_frame.pose;
+        robot_pose_.covariance = _pose->pose.covariance;
+        progress_monitor_.updateProgress(tuw::Point2D(robot_pose_.pose.position.x, robot_pose_.pose.position.y) );
+      } else {
         ROS_ERROR("Local behavior: transform between %s and %s is not available",_pose->header.frame_id.c_str(),frame_id_.c_str());
+        return;
+      } 
     } catch (tf::TransformException ex){
       ROS_ERROR("%s",ex.what());
       ros::Duration(1.0).sleep();
+      return;
     }
 
-    // Coy the pose 
-    robot_pose_.pose = pose_world_frame.pose;
-    robot_pose_.covariance = _pose->pose.covariance;
-    progress_monitor_.updateProgress(tuw::Point2D(robot_pose_.pose.position.x, robot_pose_.pose.position.y) );
 }
 
-void LocalBehaviorControllerNode::subRobotInfoCb ( const tuw_multi_robot_msgs::RobotInfo_<std::allocator<void> >::ConstPtr &_robot_info ) {
+void LocalBehaviorControllerNode::subRobotInfoCb(const tuw_multi_robot_msgs::RobotInfo_<std::allocator<void> >::ConstPtr &_robot_info) {
     std::string other_robot_name = _robot_info->sync.robot_id;
     int other_robot_process = _robot_info->sync.current_route_segment;
     robot_steps_[other_robot_name] = other_robot_process;

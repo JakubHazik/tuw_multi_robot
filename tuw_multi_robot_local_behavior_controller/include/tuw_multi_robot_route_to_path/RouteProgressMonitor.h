@@ -35,37 +35,36 @@
 
 namespace  tuw
 {
-class RouteProgressMonitor
-{
-    static const int SEGMENT_STATE_AHEAD = 0;
-    static const int SEGMENT_STATE_ACTIVE = 1;
-    static const int SEGMENT_STATE_INACTIVE = 2;
+  class RouteProgressMonitor
+  {
+    private:
 
-
-    class Segment {
+      static const int SEGMENT_STATE_AHEAD = 0;
+      static const int SEGMENT_STATE_ACTIVE = 1;
+      static const int SEGMENT_STATE_INACTIVE = 2;
+  
+      class Segment {
+        public:
+          Segment(double x0, double y0, double x1, double y1, double width);
+          tuw::LineSegment2D l; 
+          double width;
+          int state;
+          double distance;
+      };
+      
+      typedef std::shared_ptr< Segment> SegmentPtr;
     public:
-        Segment ( double x0, double y0, double x1, double y1, double width );
-        tuw::LineSegment2D l; 
-        double width;
-        int state;
-        double distance;
-    };
-    
-    typedef std::shared_ptr< Segment> SegmentPtr;
-    
-public:
-    RouteProgressMonitor();
-    
-    
-    void init(const tuw_multi_robot_msgs::Route &route);
-    void updateProgress(const tuw::Point2D p);
-    int getProgress();
-    bool finished();
-    int idx_active_segment_;
-    
-    tuw_multi_robot_msgs::Route route_;
-    std::vector<SegmentPtr> segments_;
-};
+      RouteProgressMonitor();
+      void init(const tuw_multi_robot_msgs::Route &route);
+      void updateProgress(const tuw::Point2D p);
+      int getProgress();
+      bool finished();
+      int idx_active_segment_;
+      
+      tuw_multi_robot_msgs::Route route_;
+      std::vector<SegmentPtr> segments_;
+      
+  };
 
 }
 
