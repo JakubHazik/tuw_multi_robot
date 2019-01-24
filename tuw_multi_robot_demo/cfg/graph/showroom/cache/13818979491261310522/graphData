@@ -1036,12 +1036,11 @@
 	</item>
 	<item>
 		<id>11</id>
-		<predecessorLength>2</predecessorLength>
+		<predecessorLength>1</predecessorLength>
 		<successorLength>1</successorLength>
 		<minDistance>2.756859970e+01</minDistance>
 		<pointLength>23</pointLength>
 		<item>13</item>
-		<item>14</item>
 		<item>12</item>
 		<item>
 			<x>3.720000000e+02</x>
@@ -1138,11 +1137,10 @@
 	</item>
 	<item>
 		<id>12</id>
-		<predecessorLength>1</predecessorLength>
+		<predecessorLength>0</predecessorLength>
 		<successorLength>2</successorLength>
 		<minDistance>2.648719978e+01</minDistance>
 		<pointLength>21</pointLength>
-		<item>11</item>
 		<item>15</item>
 		<item>16</item>
 		<item>
@@ -1553,12 +1551,11 @@
 	</item>
 	<item>
 		<id>16</id>
-		<predecessorLength>2</predecessorLength>
+		<predecessorLength>1</predecessorLength>
 		<successorLength>1</successorLength>
 		<minDistance>2.673999977e+01</minDistance>
 		<pointLength>23</pointLength>
 		<item>15</item>
-		<item>12</item>
 		<item>17</item>
 		<item>
 			<x>4.120000000e+02</x>
@@ -1655,11 +1652,10 @@
 	</item>
 	<item>
 		<id>17</id>
-		<predecessorLength>1</predecessorLength>
+		<predecessorLength>0</predecessorLength>
 		<successorLength>1</successorLength>
 		<minDistance>2.731579971e+01</minDistance>
 		<pointLength>22</pointLength>
-		<item>16</item>
 		<item>18</item>
 		<item>
 			<x>4.200000000e+02</x>
@@ -1752,11 +1748,10 @@
 	</item>
 	<item>
 		<id>18</id>
-		<predecessorLength>1</predecessorLength>
+		<predecessorLength>0</predecessorLength>
 		<successorLength>2</successorLength>
 		<minDistance>2.814439964e+01</minDistance>
 		<pointLength>21</pointLength>
-		<item>17</item>
 		<item>30</item>
 		<item>32</item>
 		<item>
@@ -2526,11 +2521,10 @@
 	<item>
 		<id>25</id>
 		<predecessorLength>1</predecessorLength>
-		<successorLength>2</successorLength>
+		<successorLength>1</successorLength>
 		<minDistance>4.284859848e+01</minDistance>
 		<pointLength>27</pointLength>
 		<item>24</item>
-		<item>26</item>
 		<item>29</item>
 		<item>
 			<x>2.690000000e+02</x>
@@ -2644,12 +2638,11 @@
 	<item>
 		<id>26</id>
 		<predecessorLength>2</predecessorLength>
-		<successorLength>1</successorLength>
+		<successorLength>0</successorLength>
 		<minDistance>2.482999992e+01</minDistance>
 		<pointLength>26</pointLength>
 		<item>25</item>
 		<item>29</item>
-		<item>27</item>
 		<item>
 			<x>2.450000000e+02</x>
 			<y>3.170000000e+02</y>
@@ -2758,11 +2751,10 @@
 	<item>
 		<id>27</id>
 		<predecessorLength>1</predecessorLength>
-		<successorLength>1</successorLength>
+		<successorLength>0</successorLength>
 		<minDistance>2.482999992e+01</minDistance>
 		<pointLength>25</pointLength>
 		<item>26</item>
-		<item>28</item>
 		<item>
 			<x>2.430000000e+02</x>
 			<y>2.920000000e+02</y>
@@ -2867,11 +2859,10 @@
 	<item>
 		<id>28</id>
 		<predecessorLength>1</predecessorLength>
-		<successorLength>2</successorLength>
+		<successorLength>1</successorLength>
 		<minDistance>2.482999992e+01</minDistance>
 		<pointLength>25</pointLength>
 		<item>27</item>
-		<item>38</item>
 		<item>40</item>
 		<item>
 			<x>2.500000000e+02</x>
@@ -3097,11 +3088,10 @@
 	</item>
 	<item>
 		<id>30</id>
-		<predecessorLength>2</predecessorLength>
+		<predecessorLength>1</predecessorLength>
 		<successorLength>1</successorLength>
 		<minDistance>1.884720039e+01</minDistance>
 		<pointLength>28</pointLength>
-		<item>18</item>
 		<item>32</item>
 		<item>31</item>
 		<item>
@@ -3219,11 +3209,10 @@
 	</item>
 	<item>
 		<id>31</id>
-		<predecessorLength>1</predecessorLength>
+		<predecessorLength>0</predecessorLength>
 		<successorLength>2</successorLength>
 		<minDistance>1.801860046e+01</minDistance>
 		<pointLength>27</pointLength>
-		<item>30</item>
 		<item>33</item>
 		<item>39</item>
 		<item>
@@ -3427,12 +3416,11 @@
 	<item>
 		<id>33</id>
 		<predecessorLength>2</predecessorLength>
-		<successorLength>2</successorLength>
+		<successorLength>1</successorLength>
 		<minDistance>1.095440006e+01</minDistance>
 		<pointLength>26</pointLength>
 		<item>23</item>
 		<item>34</item>
-		<item>31</item>
 		<item>39</item>
 		<item>
 			<x>3.600000000e+02</x>
@@ -3541,11 +3529,10 @@
 	</item>
 	<item>
 		<id>34</id>
-		<predecessorLength>2</predecessorLength>
+		<predecessorLength>1</predecessorLength>
 		<successorLength>1</successorLength>
 		<minDistance>2.183860016e+01</minDistance>
 		<pointLength>23</pointLength>
-		<item>33</item>
 		<item>23</item>
 		<item>35</item>
 		<item>
@@ -3643,11 +3630,10 @@
 	</item>
 	<item>
 		<id>35</id>
-		<predecessorLength>1</predecessorLength>
+		<predecessorLength>0</predecessorLength>
 		<successorLength>1</successorLength>
 		<minDistance>2.101000023e+01</minDistance>
 		<pointLength>22</pointLength>
-		<item>34</item>
 		<item>36</item>
 		<item>
 			<x>3.420000000e+02</x>
@@ -3740,11 +3726,10 @@
 	</item>
 	<item>
 		<id>36</id>
-		<predecessorLength>1</predecessorLength>
+		<predecessorLength>0</predecessorLength>
 		<successorLength>1</successorLength>
 		<minDistance>2.183860016e+01</minDistance>
 		<pointLength>22</pointLength>
-		<item>35</item>
 		<item>37</item>
 		<item>
 			<x>3.210000000e+02</x>
@@ -3837,11 +3822,10 @@
 	</item>
 	<item>
 		<id>37</id>
-		<predecessorLength>1</predecessorLength>
+		<predecessorLength>0</predecessorLength>
 		<successorLength>1</successorLength>
 		<minDistance>2.183860016e+01</minDistance>
 		<pointLength>22</pointLength>
-		<item>36</item>
 		<item>38</item>
 		<item>
 			<x>3.000000000e+02</x>
@@ -3934,11 +3918,10 @@
 	</item>
 	<item>
 		<id>38</id>
-		<predecessorLength>1</predecessorLength>
+		<predecessorLength>0</predecessorLength>
 		<successorLength>2</successorLength>
 		<minDistance>2.266720009e+01</minDistance>
 		<pointLength>21</pointLength>
-		<item>37</item>
 		<item>28</item>
 		<item>40</item>
 		<item>
