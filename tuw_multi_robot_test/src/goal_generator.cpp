@@ -88,7 +88,7 @@ int main(int argc, char** argv){
 
   parseWaypointsFile(nh, goals_list, world_frame);
 
-  ros::Subscriber robotPoseSub = nh.subscribe("/" + robot_id + "/odom", 1, odomCallback);
+  ros::Subscriber robotPoseSub = nh.subscribe("/" + robot_id + "/global/odom", 1, odomCallback);
   ros::Publisher goalPub = nh.advertise<tuw_multi_robot_msgs::RobotGoals>("/goal_id",1); 
 
   // Transform
@@ -99,13 +99,14 @@ int main(int argc, char** argv){
   tuw_multi_robot_msgs::RobotGoals labeled_goal;
   labeled_goal.robot_name=robot_id;
 
-  ros::Rate loop_rate(0.5);
+  ros::Rate loop_rate(2);
 
   unsigned goal_index=0;
   geometry_msgs::Pose goal = goals_list.at(goal_index).pose;
   labeled_goal.destinations.push_back(goal);
 
   bool goal_published=false;
+  int n_time_publish=0;
 
   ros::spinOnce();
 
@@ -114,7 +115,7 @@ int main(int argc, char** argv){
     ros::spinOnce();
 
     // Transform the robot's pose in the global frame  
-    try {
+    /*try {
       tf_listener.waitForTransform(pose_odom_frame.header.frame_id, world_frame,
                                 ros::Time::now(), ros::Duration(1.0));
 
@@ -123,12 +124,12 @@ int main(int argc, char** argv){
     } catch (tf::TransformException ex) {
       ROS_ERROR("%s",ex.what());
       ros::Duration(1.0).sleep();
-    }
+    }*/
 
     
-    ROS_DEBUG("%f",distance2d(goal.position.x,goal.position.y,pose_world_frame.pose.position.x,pose_world_frame.pose.position.y));
+    ROS_ERROR("%f",distance2d(goal.position.x,goal.position.y,pose_world_frame.pose.position.x,pose_world_frame.pose.position.y));
 
-    if(distance2d(goal.position.x,goal.position.y,pose_world_frame.pose.position.x,pose_world_frame.pose.position.y) < 0.4) {
+    if(distance2d(goal.position.x,goal.position.y,pose_odom_frame.pose.position.x,pose_odom_frame.pose.position.y) < 1.0) {
       ros::Duration(2.0).sleep();
       goal_index++;
       // If we reach the end of the list 
@@ -141,12 +142,18 @@ int main(int argc, char** argv){
       goal = goals_list.at(goal_index).pose;
       labeled_goal.destinations.at(0) = goal;
       goal_published=false;
+      n_time_publish=0;
     }
-      
-    if(!goal_published) {
+   
+    // Republish several times to be sure that the goal is sent   
+    if(!goal_published || n_time_publish<5) {
       goalPub.publish(labeled_goal);
+      ROS_ERROR("Goal published");
       goal_published=true;
+      n_time_publish++;
     }
+
+    loop_rate.sleep();
  
   }
 
