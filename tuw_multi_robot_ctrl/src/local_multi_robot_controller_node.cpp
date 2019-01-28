@@ -127,21 +127,25 @@ LocalMultiRobotControllerNode::LocalMultiRobotControllerNode(ros::NodeHandle &n)
         subOdom_[i] = n.subscribe<nav_msgs::Odometry>(robot_names_[i] + "/" + topic_odom_, 1, boost::bind(&LocalMultiRobotControllerNode::subOdomCb, this, _1, i));
         subRoute_[i] = n.subscribe<tuw_multi_robot_msgs::Route>(robot_names_[i] + "/" + topic_route_, 1, boost::bind(&LocalMultiRobotControllerNode::subRouteCb, this, _1, i));
         subCtrl_[i] = n.subscribe<std_msgs::String>(robot_names_[i] + "/" + topic_ctrl_, 1, boost::bind(&LocalMultiRobotControllerNode::subCtrlCb, this, _1, i));
+        controller[i].setGoodId(tuw_multi_robot_msgs::RobotInfo::GOOD_EMPTY);
+        controller[i].setOrderStatus(tuw_multi_robot_msgs::RobotInfo::ORDER_NONE);
+        controller[i].setOrderId(-1);
     }
-        ros::Rate r(update_rate_);
+    subPickup_ = n.subscribe("/pickup", 10, &velocity_controller::LocalMultiRobotControllerNode::subPickupCb, this);
+    ros::Rate r(update_rate_);
 
-        int robot_info_trigger_ = 0;
-        while (ros::ok())
-        {
-            r.sleep();
-            ros::spinOnce();
-            if(robot_info_trigger_ >  (update_rate_ / update_rate_info_)) {
-                robot_info_trigger_ = 0;
-                publishRobotInfo();
-            } else {           
-                robot_info_trigger_++;
-            }
+    int robot_info_trigger_ = 0;
+    while (ros::ok())
+    {
+        r.sleep();
+        ros::spinOnce();
+        if(robot_info_trigger_ >  (update_rate_ / update_rate_info_)) {
+            robot_info_trigger_ = 0;
+            publishRobotInfo();
+        } else {           
+            robot_info_trigger_++;
         }
+    }
 
 }
 
@@ -266,7 +270,20 @@ void velocity_controller::LocalMultiRobotControllerNode::subCtrlCb(const ros::Me
     }
 }
 
-void LocalMultiRobotControllerNode::publishRobotInfo()
+void velocity_controller::LocalMultiRobotControllerNode::subPickupCb(const tuw_multi_robot_msgs::Pickup::ConstPtr& pickup)
+{
+    for (uint32_t i = 0; i < robot_names_.size(); i++)
+    {
+        if ( robot_names_[i] == pickup->robot_name )
+        {
+            //controller[i].setGoodId(pickup->good_id);
+            controller[i].setOrderId(pickup->order_id);
+            break;
+        }
+    }
+}
+
+void velocity_controller::LocalMultiRobotControllerNode::publishRobotInfo()
 {
     for (uint32_t i = 0; i < robot_names_.size(); i++)
     {
@@ -280,13 +297,9 @@ void LocalMultiRobotControllerNode::publishRobotInfo()
         ri.sync.robot_id = robot_names_[i];
         ri.sync.current_route_segment = controller[i].getCount();
         ri.mode = ri.MODE_NA;
-        if (active_robots[i])
-        {
-          ri.status = ri.STATUS_DRIVING; //TODO other statuses
-        } else {
-          ri.status = ri.STATUS_STOPPED;
-        }
-        ri.good_id = ri.GOOD_NA;
+
+        ri.status = controller[i].getStatus();
+        ri.good_id = controller[i].getGoodId();
 
         pubRobotInfo_.publish(ri);
     }

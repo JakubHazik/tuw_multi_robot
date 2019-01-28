@@ -110,7 +110,7 @@ find_package(Eigen3 REQUIRED)
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES tuw_multi_robot_local_behavior_controller
-   CATKIN_DEPENDS geometry_msgs nav_msgs roscpp tuw_multi_robot_msgs
+  CATKIN_DEPENDS geometry_msgs nav_msgs roscpp tuw_multi_robot_msgs
 #  DEPENDS system_lib
 )
 
@@ -141,6 +141,7 @@ add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EX
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(${PROJECT_NAME}_node src/MultiRobotLocalBehaviorController.cpp)
+add_dependencies(${PROJECT_NAME}_node {${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(${PROJECT_NAME}_node
   ${PROJECT_NAME}
   ${catkin_LIBRARIES}
@@ -162,8 +163,8 @@ target_link_libraries(${PROJECT_NAME}_node
 # )
 
 add_executable(tuw_local_behavior_controller_node src/LocalBehaviorControllerNode.cpp)
-add_dependencies(tuw_local_behavior_controller_node ${catkin_EXPORTED_TARGETS})
-target_link_libraries(tuw_local_behavior_controller_node
+add_dependencies(tuw_local_behavior_controller_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(tuw_local_behavior_controller_node 
   ${PROJECT_NAME}
   ${catkin_LIBRARIES}
 )
