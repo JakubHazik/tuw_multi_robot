@@ -9,6 +9,7 @@ namespace velocity_controller
     SegmentController::SegmentController()
     {
         actual_cmd_ = run;
+        goodId = tuw_multi_robot_msgs::RobotInfo::GOOD_EMPTY;
     }
 
     void SegmentController::setPath( std::shared_ptr< std::vector< PathPoint > > _path )
@@ -19,6 +20,7 @@ namespace velocity_controller
         // DEBUG
         // ROS_INFO("Je me set le path");
         plan_active = true;
+        robot_status = tuw_multi_robot_msgs::RobotInfo::STATUS_DRIVING;
     }
 
     int SegmentController::getCount()
@@ -81,6 +83,7 @@ namespace velocity_controller
                     if ( pathCounter_ >= path_->size() )
                     {
                         ROS_INFO( "Multi Robot Controller: goal reached" );
+                        robot_status = tuw_multi_robot_msgs::RobotInfo::STATUS_DONE;
                         plan_active = false;
                     }
                 }
@@ -193,6 +196,33 @@ namespace velocity_controller
     {
         *_v = v_;
         *_w = w_;
+    }
+
+    int SegmentController::getStatus()
+    {
+        return robot_status;
+    }
+
+    void SegmentController::setOrderId(int orderId)
+    {
+        this->orderId = orderId;
+    }
+    void SegmentController::setGoodId(int goodId)
+    {
+        this->goodId = goodId;
+    }
+
+    int SegmentController::getGoodId()
+    {
+        return goodId;
+    }
+    void SegmentController::setOrderStatus(int orderStatus)
+    {
+        this->orderStatus = orderStatus;
+    }
+    int SegmentController::getOrderStatus()
+    {
+        return this->orderStatus;
     }
 
 }

@@ -12,6 +12,8 @@
   <node pkg="tuw_multi_robot_local_behavior_controller" type="tuw_local_behavior_controller_node" name="local_behavior" output="screen">
     <param name="robot_name" value="$(arg robot_name)" />
     <param name="robot_radius" value="1.4" />
+    <remap from="robot_info" to="/robot_info" />
+>>>>>>> upstream/master
   </node>
   
   <node pkg="nodelet" type="nodelet" name="self_localization" args="standalone FakePoseEstimationNodelet"/>
