@@ -3,21 +3,20 @@
 <launch>
     <arg name="room" value="showroom" />      
     
-    <!-- This node only reads the dxf and stores it a graph in a folder structrue usabe by the graph_generator -->
-<!--    <node pkg="tuw_multi_robot_test" type="goal_generator" name="goal_generator_robot_3">
-        <param name="file" value="$(find tuw_multi_robot_demo)/cfg/goals/$(arg room)/goal_robot_1.txt" />
-        <param name="robot_id" value="robot_3" />
-        <param name="odom_frame" value="robot_3/odom" />
-        <param name="world_frame" value="robot_3/map" />
-        <param name="run_once" value="false" />
-    </node> -->
-
-    <node pkg="tuw_multi_robot_test" type="goal_generator" name="goal_generator_robot_1">
-        <param name="file" value="$(find tuw_multi_robot_demo)/cfg/goals/$(arg room)/goal_robot_0.txt" />
-        <param name="robot_id" value="robot_4" />
-        <param name="odom_frame" value="robot_4/odom" />
-        <param name="world_frame" value="robot_4/map" />
+    <node pkg="tuw_multi_robot_test" type="goal_generator" name="goal_generator_ilogistics_7">
+        <param name="file" value="$(find tuw_multi_robot_demo)/cfg/goals/$(arg room)/goal_small_loop.txt" />
+        <param name="robot_id" value="ilogistics_2_0007" />
+        <param name="odom_frame" value="ilogistics_2_0007/odom" />
+        <param name="world_frame" value="ilogistics_2_0007/map" />
         <param name="run_once" value="false" />
     </node> 
+    
+    <node pkg="tuw_multi_robot_test" type="goal_generator" name="goal_generator_ilogistics_6">
+        <param name="file" value="$(find tuw_multi_robot_demo)/cfg/goals/$(arg room)/goal_big_loop.txt" />
+        <param name="robot_id" value="ilogistics_2_0006" />
+        <param name="odom_frame" value="ilogistics_2_0006/odom" />
+        <param name="world_frame" value="ilogistics_2_0006/map" />
+        <param name="run_once" value="false" />
+    </node>  
 
 </launch>
