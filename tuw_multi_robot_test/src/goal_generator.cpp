@@ -14,6 +14,7 @@
 
 geometry_msgs::PoseStamped pose_odom_frame;
 
+
 void odomCallback(const nav_msgs::Odometry::ConstPtr& msg)
 {
   pose_odom_frame.header=msg->header; 
@@ -58,7 +59,7 @@ void parseWaypointsFile(ros::NodeHandle& nh, std::vector<geometry_msgs::PoseStam
       std::getline(lineStream,cell);
 
       next_point.pose.orientation = tf::createQuaternionMsgFromYaw(std::stof(cell));
-      next_point.header.frame_id = "world";
+      next_point.header.frame_id = _world_frame;
       goals_list.push_back(next_point);
     }
 
@@ -77,6 +78,8 @@ int main(int argc, char** argv){
   // ID of the robot associated with the goal generator
   std::string robot_id;
   nh.param<std::string>("robot_id", robot_id, "robot_0");
+  bool use_tf;
+  nh.param<bool>("use_tf", use_tf, false);
   // Frames
   std::string odom_frame;
   nh.param<std::string>("odom_frame", odom_frame, "odom");
@@ -114,20 +117,24 @@ int main(int argc, char** argv){
 
     ros::spinOnce();
 
-    // Transform the robot's pose in the global frame  
-    /*try {
-      tf_listener.waitForTransform(pose_odom_frame.header.frame_id, world_frame,
-                                ros::Time::now(), ros::Duration(1.0));
+    if(use_tf) {
+      try {
+        tf_listener.waitForTransform(pose_odom_frame.header.frame_id, world_frame,
+                                  ros::Time::now(), ros::Duration(1.0));
 
-      pose_world_frame.header.stamp=ros::Time::now(); 
-      tf_listener.transformPose(world_frame, pose_odom_frame, pose_world_frame);
-    } catch (tf::TransformException ex) {
-      ROS_ERROR("%s",ex.what());
-      ros::Duration(1.0).sleep();
-    }*/
+        pose_world_frame.header.stamp=ros::Time::now(); 
+        tf_listener.transformPose(world_frame, pose_odom_frame, pose_world_frame);
+      } catch (tf::TransformException ex) {
+        ROS_ERROR("%s",ex.what());
+        ros::Duration(1.0).sleep();
+      }
+    } else {
+      if(pose_odom_frame.header.frame_id != world_frame) {
+        ROS_ERROR("Odometry frame (\"%s\") is not equal to the world frame (\"%s\"), please enable use_tf or publish in the right frame",odom_frame.c_str(),world_frame.c_str());
+        break;
+      }
+    }
 
-    
-    ROS_ERROR("%f",distance2d(goal.position.x,goal.position.y,pose_world_frame.pose.position.x,pose_world_frame.pose.position.y));
 
     if(distance2d(goal.position.x,goal.position.y,pose_odom_frame.pose.position.x,pose_odom_frame.pose.position.y) < 1.0) {
       ros::Duration(2.0).sleep();
