@@ -52,19 +52,21 @@ namespace multi_robot_router
 {
 class RobotInfo : public tuw_multi_robot_msgs::RobotInfo
 {
-public:
+  public:
     RobotInfo ()
     : tuw_multi_robot_msgs::RobotInfo()
     , online_(Online::inactive)
     , activeTime_(1.0)
     {
     }
+
     RobotInfo (const tuw_multi_robot_msgs::RobotInfo& o)
     : tuw_multi_robot_msgs::RobotInfo(o)
     , online_(Online::inactive)
     , activeTime_(1.0)
     {
     }
+
     RobotInfo (const std::string &name)
     : tuw_multi_robot_msgs::RobotInfo()
     , online_(Online::inactive)
@@ -72,54 +74,67 @@ public:
     {
             robot_name = name;
     }
-        enum class Online
-        {
-            inactive,
-            active,
-            fixed
-        };
-        
-        void updateInfo(const tuw_multi_robot_msgs::RobotInfo &info);
-        
-        /**
-         * crates subsribers and publisher using a given namespace
-         * @param n node handler
-         * @param robot_name_as_namespace on true it will use the robots name as namespace prefix
-         **/
-        void initTopics(ros::NodeHandle &n,  bool robot_name_as_namespace);
-        
-        Online getOnlineStatus() const;
-        void updateOnlineStatus ( const float updateTime );
-        
-        /**
-         * returns vehilce radius based on the robots shape
-         * @ToDo a caching must be implemented for non circular shapes
-         * @return radius
-         **/
-        float radius() const;
-        
-        Eigen::Vector3d getPose() const;
-        /**
-         * returns the indes of the robot with a name
-         * @return index or data.size() if no matching element was found
-         **/
-        static size_t findIdx(const std::vector<std::shared_ptr<RobotInfo> > &data, const std::string &name);
-        /**
-         * returns a reference to the robot with a name
-         * @return ref or data.end() if no matching element was found
-         **/
-        static std::vector<std::shared_ptr<RobotInfo> >::iterator findObj(std::vector<std::shared_ptr<RobotInfo> > &data, const std::string &name);
-        
-        bool compareName(const std::shared_ptr<RobotInfo> data) const;
-        
-        ros::Subscriber subOdom_;
-        ros::Publisher pubPaths_;
-        ros::Publisher pubRoute_;
-        void callback_odom ( const nav_msgs::Odometry &msg);
-    private:
-        Online online_;
-        float activeTime_;
+
+    enum class Online
+    {
+        inactive,
+        active,
+        fixed
+    };
+   
+     
+    void updateInfo(const tuw_multi_robot_msgs::RobotInfo &info);
+    
+    /**
+     * @brief Creates subscribers and publishers using a given namespace
+     * @param n node handler
+     * @param robot_name_as_namespace on true it will use the robots name as namespace prefix
+     **/
+    void initTopics(ros::NodeHandle &n,  bool robot_name_as_namespace);
+    
+    /**
+     * @brief Returns the online status of the robot
+     * @return online status of the robot
+     **/ 
+    Online getOnlineStatus() const;
+    
+    /**
+     * @brief Update the online status based on the updateTime
+     * @params updateTime 
+     **/ 
+    void updateOnlineStatus ( const float updateTime );
+    
+    /**
+     * @brief returns vehicle radius based on the robots shape
+     * @ToDo a caching must be implemented for non circular shapes
+     * @return radius
+     **/
+    float radius() const;
+    
+    Eigen::Vector3d getPose() const;
+
+    /**
+     * returns the indices of the robot with a name
+     * @return index or data.size() if no matching element was found
+     **/
+    static size_t findIdx(const std::vector<std::shared_ptr<RobotInfo> > &data, const std::string &name);
+    /**
+     * returns a reference to the robot with a name
+     * @return ref or data.end() if no matching element was found
+     **/
+    static std::vector<std::shared_ptr<RobotInfo> >::iterator findObj(std::vector<std::shared_ptr<RobotInfo> > &data, const std::string &name);
+    
+    bool compareName(const std::shared_ptr<RobotInfo> data) const;
+    
+    ros::Subscriber subOdom_;
+    ros::Publisher pubPaths_;
+    ros::Publisher pubRoute_;
+    void callback_odom ( const nav_msgs::Odometry &msg);
+  private:
+    Online online_;
+    float activeTime_;
 };
+
 typedef std::shared_ptr<RobotInfo> RobotInfoPtr;
 typedef std::vector<std::shared_ptr<RobotInfo> >::iterator RobotInfoPtrIterator;
 

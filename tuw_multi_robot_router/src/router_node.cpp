@@ -42,7 +42,7 @@ int main ( int argc, char **argv ) {
     ros::init ( argc, argv, "tuw_multi_robot_router" ); /// initializes the ros node with default name
     ros::NodeHandle n;
 
-    ros::Rate r ( 1 );
+    ros::Rate r ( 5 );
 
     multi_robot_router::Router_Node node ( n );
 
@@ -69,43 +69,39 @@ Router_Node::Router_Node ( ros::NodeHandle &_n ) : Router(),
     sum_processing_time_successful_(.0){
     id_ = 0;
 
-
-
     n_param_.param<bool> ( "single_robot_mode", single_robot_mode_, false );
-
-    n_param_.param<std::string> ( "robot_goal", singleRobotGoalTopic_, "/goal" );
-    
-    n_param_.param<std::string> ( "robot_id_goal", singleRobotIdGoalTopic_, "/goal_id" );
 
     n_param_.param<std::string> ( "frame_id", frame_id_, frame_id_ );
 
-    // static subscriptions
+    // Static subscriptions
     subMap_ = n_.subscribe ( "map", 1, &Router_Node::mapCallback, this );
     subVoronoiGraph_ = n_.subscribe ( "segments", 1, &Router_Node::graphCallback, this );
     subRobotInfo_ = n_.subscribe ( "robot_info" , 10000, &Router_Node::robotInfoCallback, this );
+    subSingleRobotIdGoal_ = n_.subscribe ( "robot_id_goal", 1, &Router_Node::goalIdCallback, this );
 
     if ( single_robot_mode_) {
-        /// Sinble Robot Mode
+        // Single Robot Mode
         ROS_INFO("Single Robot Mode");
         subSingleRobotGoal_ = n_.subscribe ( "goal", 1, &Router_Node::goalCallback, this );
     } else {
-        /// Multi Robot Mode
+        // Multi Robot Mode
         ROS_INFO("Multi Robot Mode");
         subGoalSet_ = n_.subscribe ( "goals" , 1, &Router_Node::goalsCallback, this );
     }
 
-    subSingleRobotIdGoal_ = n_.subscribe ( singleRobotIdGoalTopic_, 1, &Router_Node::goalIdCallback, this );
-    //static publishers
+    // Static publishers
     pubPlannerStatus_ = n_.advertise<tuw_multi_robot_msgs::RouterStatus> ( "planner_status", 1 );
 
-    //dynamic reconfigure
+    // Dynamic reconfigure
     call_type = boost::bind ( &Router_Node::parametersCallback, this, _1, _2 );
     param_server.setCallback ( call_type );
 }
 
 void Router_Node::monitorExecution() {
+
     for ( const RobotInfoPtr robot: active_robots_ ) {
         std::map<std::string, double>::iterator it = finished_robots_.find ( robot->robot_name );
+        // If the robot is still driving, remove it from the finished robots list
         if ( robot->status == tuw_multi_robot_msgs::RobotInfo::STATUS_DRIVING ) {
             if ( it != finished_robots_.end() ) {
                 finished_robots_.erase ( it );
@@ -114,6 +110,7 @@ void Router_Node::monitorExecution() {
                 }
             }
         } else {
+            // If robot has reached its goal
             if ( it == finished_robots_.end() ) {
                 double duration = (ros::Time::now() -  time_first_robot_started_).toSec();
                 finished_robots_[robot->robot_name] = duration;
@@ -124,6 +121,8 @@ void Router_Node::monitorExecution() {
             }
         }
     }
+    
+    // If every robot reached their goal, stop monitoring and execution
     if ( finished_robots_.size() == active_robots_.size() ) {
         if ( monitor_enabled_ ) {
             ros::Duration duration = ros::Time::now() -  time_first_robot_started_;
@@ -144,10 +143,11 @@ void Router_Node::monitorExecution() {
 void Router_Node::goalCallback ( const geometry_msgs::PoseStamped &msg ) {
     
     if ( subscribed_robots_.size() != 1 ) {
-        ROS_WARN ( "No robot subsribed, ou have to publish a tuw_multi_robot_msgs::RobotInfo to let the planer know where your robot is located!");
-        ROS_WARN ( "Use a local behavior controller to publish regual a RobotInfo msg!");
+        ROS_WARN ( "No robot subscribed, a tuw_multi_robot_msgs::RobotInfo should be published in order to know where the robot is located");
+        ROS_WARN ( "Use a local behavior controller to publish regual a RobotInfo msg");
         return;
-    } 
+    }
+ 
     tuw_multi_robot_msgs::RobotGoalsArray goalsArray;
     goalsArray.header = msg.header;
     goalsArray.robots.resize(1);    
@@ -225,7 +225,7 @@ void Router_Node::updateTimeout ( const float _secs ) {
     }
 }
 void Router_Node::parametersCallback ( tuw_multi_robot_router::routerConfig &config, uint32_t level ) {
-    //Important set router before settings
+    // Important set router before settings
     uint32_t threads = config.nr_threads;
     if ( config.router_type == 1 )
         setPlannerType ( routerType::multiThreadSrr, threads );
@@ -310,7 +310,7 @@ void Router_Node::robotInfoCallback ( const tuw_multi_robot_msgs::RobotInfo &_ro
     auto robot = RobotInfo::findObj ( subscribed_robots_, _robotInfo.robot_name );
     // If new robot connected, add it to the router
     if ( robot == subscribed_robots_.end() ) {
-        // create new entry
+        // Create new entry
         RobotInfoPtr robot_new = std::make_shared<RobotInfo> ( _robotInfo );
         robot_new->initTopics ( n_ , !single_robot_mode_);
         subscribed_robots_.push_back ( robot_new );
@@ -323,8 +323,9 @@ void Router_Node::robotInfoCallback ( const tuw_multi_robot_msgs::RobotInfo &_ro
         if ( r->radius() > robot_radius_max_ )
             robot_radius_max_ = r->radius();
     }
+
     if(single_robot_mode_ && (subscribed_robots_.size() > 1)){
-        ROS_WARN("More than one robot subsribed, but the MRRP is in single robot mode");
+        ROS_WARN("More than one robot subscribed, but the MRRP is in single robot mode");
     }
 }
 

@@ -68,7 +68,8 @@ public:
     void publish();
     
     /**
-     * @brief monitors the execution
+     * @brief Monitors the execution
+     * Check status of every robots and decide if execution is finished or not
      */
     void monitorExecution();
     /**
@@ -80,12 +81,43 @@ public:
     ros::NodeHandle n_param_; ///< Node handler to the current node
 
 private:
-    // These members are for time logging
+    // Callback for the dynamic reconfigure
+    void parametersCallback ( tuw_multi_robot_router::routerConfig &config, uint32_t level );
+    // Callback to get the graph data
+    void graphCallback ( const tuw_multi_robot_msgs::Graph &msg );
+    // Callback to receive an array of goals
+    void goalsCallback ( const tuw_multi_robot_msgs::RobotGoalsArray &_goals );
+    // Callback to get the map
+    void mapCallback ( const nav_msgs::OccupancyGrid &_map );
+    // Callback to get the robot info
+    void robotInfoCallback ( const tuw_multi_robot_msgs::RobotInfo &_robotInfo );
+    // Callback to get goal (single robot mode)
+    void goalCallback ( const geometry_msgs::PoseStamped &_goal );
+    // Callback to get a labelised goal (a goal for a single robot but in a multi-robot mode)
+    void goalIdCallback ( const tuw_multi_robot_msgs::RobotGoals &_goal ); // R.Desarzens
+    // Compute hash of a map
+    size_t getHash ( const std::vector<signed char> &_map, const Eigen::Vector2d &_origin, const float &_resolution );
+    // Compute hash of a graph
+    size_t getHash ( const std::vector<Segment> &_graph );
+
+    static bool sortSegments ( const Segment &i, const Segment &j )
+    {
+        return i.getSegmentId() < j.getSegmentId();
+    }
+    // TODO
+    void unsubscribeTopic ( std::string _robot_name );
+    // Helper function to compute the yaw
+    float getYaw ( const geometry_msgs::Quaternion &_rot );
+    float calcRadius ( const int shape, const std::vector<float> &shape_variables ) const;
+
+    bool preparePlanning ( std::vector<float> &_radius, std::vector<Eigen::Vector3d> &_starts, std::vector<Eigen::Vector3d> &_goals, const tuw_multi_robot_msgs::RobotGoalsArray &_ros_goals, std::vector<std::string> &robot_names );
+    bool addSingleRobot ( std::vector<float> &_radius, std::vector<Eigen::Vector3d> &_starts, std::vector<Eigen::Vector3d> &_goals, const tuw_multi_robot_msgs::RobotGoals &goal_msg, std::vector<std::string> &robot_names );
+ 
+    // These members are for logging
     int attempts_total_;
     int attempts_successful_;
     double sum_processing_time_total_;
     double sum_processing_time_successful_;
-    
     ros::Time time_first_robot_started_;
 
     tuw_multi_robot_msgs::RouterStatus mrrp_status_;
@@ -94,75 +126,43 @@ private:
     dynamic_reconfigure::Server<tuw_multi_robot_router::routerConfig>::CallbackType call_type;
     ros::Publisher pubPlannerStatus_;
 
-    std::vector<ros::Subscriber> subOdom_;
     ros::Subscriber subGoalSet_;
-    ros::Subscriber subSingleRobotIdGoal_;
-    ros::Subscriber subMap_;
+    ros::Subscriber subSingleRobotIdGoal_;              ///< subscriber to a labelised single goal
+    ros::Subscriber subMap_;                            
     ros::Subscriber subSingleRobotGoal_;
     ros::Subscriber subVoronoiGraph_;
     ros::Subscriber subRobotInfo_;
 
-    std::vector<RobotInfoPtr> subscribed_robots_;       /// robots available
-    std::vector<RobotInfoPtr> active_robots_;           /// robots currently used by the planner
-    std::map<std::string, double> finished_robots_;     /// robots finished with execution time
-    std::vector<std::string> missing_robots_;
+    std::vector<RobotInfoPtr> subscribed_robots_;       ///< robots available
+    std::vector<RobotInfoPtr> active_robots_;           ///< robots currently used by the planner
+    std::map<std::string, double> finished_robots_;     ///< robots finished with execution time
+    std::vector<std::string> missing_robots_;           ///< robots missing (TODO)
     float robot_radius_max_;
     cv::Mat distMap_;
     Eigen::Vector2d mapOrigin_;
     float mapResolution_;
-    
-    std::string route_topic_;
-    std::string odom_topic_;
-    std::string path_topic_;
-    std::string goal_topic_;
-    std::string map_topic_;
-    std::string robot_info_topic_;
-    std::string voronoi_topic_;
-    std::string planner_status_topic_;
-    std::string singleRobotGoalTopic_;
-    std::string singleRobotIdGoalTopic_; // A topic to send a goal to a robot specified by its id 
-                                         // R.Desarzens
-    std::string singleRobotName_;
-   
+  
+    // Parameters 
     std::string frame_id_; 
+    std::string singleRobotName_;
     bool single_robot_mode_;
     bool publish_routing_table_;
+    float topic_timeout_s_ = 10;
+    bool monitor_enabled_;
+    
+    // State variables 
+    bool freshPlan_ = false;
     bool got_map_ = false;
     bool got_graph_ = false;
+    std::vector<Eigen::Vector3d> starts_;               ///< starting position of each robot
+    std::vector<Eigen::Vector3d> goals_;                ///< goal of each robot
+    std::vector<float> radius_;                         ///< radius of each robot
+    std::vector<std::string> robot_names_;              ///< id of each robots
     std::vector<Segment> graph_;
     size_t current_map_hash_;
     size_t current_graph_hash_;
     int id_;
-    float topic_timeout_s_ = 10;
-    bool freshPlan_ = false;
-    bool monitor_enabled_;
-  
-    // Stores robot's state variable as attribute to allow modification of a specific goal while 
-    // keeping the others (R. Desarzens) 
-    std::vector<Eigen::Vector3d> starts_; // starting position of each robot
-    std::vector<Eigen::Vector3d> goals_; // goal of each robot
-    std::vector<float> radius_; // radius of each robot
-    std::vector<std::string> robot_names_; // id of each robots
  
-    void parametersCallback ( tuw_multi_robot_router::routerConfig &config, uint32_t level );
-    void odomCallback ( const ros::MessageEvent<nav_msgs::Odometry const> &_event, int _topic );
-    void graphCallback ( const tuw_multi_robot_msgs::Graph &msg );
-    void goalsCallback ( const tuw_multi_robot_msgs::RobotGoalsArray &_goals );
-    void mapCallback ( const nav_msgs::OccupancyGrid &_map );
-    void robotInfoCallback ( const tuw_multi_robot_msgs::RobotInfo &_robotInfo );
-    void goalCallback ( const geometry_msgs::PoseStamped &_goal );
-    void goalIdCallback ( const tuw_multi_robot_msgs::RobotGoals &_goal ); // R.Desarzens
-    size_t getHash ( const std::vector<signed char> &_map, const Eigen::Vector2d &_origin, const float &_resolution );
-    size_t getHash ( const std::vector<Segment> &_graph );
-    static bool sortSegments ( const Segment &i, const Segment &j )
-    {
-        return i.getSegmentId() < j.getSegmentId();
-    }
-    void unsubscribeTopic ( std::string _robot_name );
-    float getYaw ( const geometry_msgs::Quaternion &_rot );
-    float calcRadius ( const int shape, const std::vector<float> &shape_variables ) const;
-    bool preparePlanning ( std::vector<float> &_radius, std::vector<Eigen::Vector3d> &_starts, std::vector<Eigen::Vector3d> &_goals, const tuw_multi_robot_msgs::RobotGoalsArray &_ros_goals, std::vector<std::string> &robot_names );
-    bool addSingleRobot ( std::vector<float> &_radius, std::vector<Eigen::Vector3d> &_starts, std::vector<Eigen::Vector3d> &_goals, const tuw_multi_robot_msgs::RobotGoals &goal_msg, std::vector<std::string> &robot_names ); 
 };
 } // namespace multi_robot_router
 #endif // Router_Node_H
