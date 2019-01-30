@@ -77,6 +77,11 @@ public:
      * @param secs the seconds passed since the last update
      */
     void updateTimeout ( const float _secs );
+
+    /**
+     * @brief run the multi_robot_router
+     */
+    void plan();
     ros::NodeHandle n_;       ///< Node handler to the root node
     ros::NodeHandle n_param_; ///< Node handler to the current node
 
@@ -152,6 +157,8 @@ private:
     
     // State variables 
     bool freshPlan_ = false;
+    bool planner_prepared_ = false;
+    bool plan_found_ = false;
     bool got_map_ = false;
     bool got_graph_ = false;
     std::vector<Eigen::Vector3d> starts_;               ///< starting position of each robot

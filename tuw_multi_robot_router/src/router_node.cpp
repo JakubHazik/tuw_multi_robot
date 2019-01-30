@@ -97,6 +97,7 @@ Router_Node::Router_Node ( ros::NodeHandle &_n ) : Router(),
     param_server.setCallback ( call_type );
 }
 
+
 void Router_Node::monitorExecution() {
 
     for ( const RobotInfoPtr robot: active_robots_ ) {
@@ -158,64 +159,6 @@ void Router_Node::goalCallback ( const geometry_msgs::PoseStamped &msg ) {
     goalsCallback ( goalsArray );
 }
 
-void Router_Node::goalIdCallback ( const tuw_multi_robot_msgs::RobotGoals &_goal ) {
-    // Check if the robot associated with goal is subscribed to the router
-    bool isRobotSubscribed=false;
-    for(auto it=subscribed_robots_.begin();it!=subscribed_robots_.end();it++) {
-      if(!_goal.robot_name.compare((*it)->robot_name)) {
-        isRobotSubscribed=true;
-        break;
-      }
-    }
-
-    // If the robot is subscribed
-    if(isRobotSubscribed) {
-      bool preparationSuccessful = addSingleRobot ( radius_, starts_, goals_, _goal, robot_names_ );
-      if ( preparationSuccessful && got_map_ && got_graph_ ) {
-          attempts_total_++;
-          auto t1 = std::chrono::high_resolution_clock::now();
-          preparationSuccessful &= makePlan ( starts_, goals_, radius_, distMap_, mapResolution_, mapOrigin_, graph_, robot_names_ );
-          auto t2 = std::chrono::high_resolution_clock::now();
-          int duration = std::chrono::duration_cast<std::chrono::milliseconds> ( t2 - t1 ).count();
-          sum_processing_time_total_ += duration;
-          if ( preparationSuccessful ) {
-              int nx = distMap_.cols;
-              int ny = distMap_.rows;
-
-              double res = mapResolution_;
-              int cx = mapOrigin_[0];
-              int cy = mapOrigin_[1];
-
-              publish();
-              attempts_successful_++;
-              sum_processing_time_successful_ += duration;
-              freshPlan_ = false;
-          } else {
-              publishEmpty();
-          }
-          float rate_success = ((float) attempts_successful_) / (float) attempts_total_;
-          float avr_duration_total = sum_processing_time_total_ / (float) attempts_total_;
-          float avr_duration_successful = sum_processing_time_successful_ / (float) attempts_successful_;
-          ROS_INFO ( "\nSuccess %i, %i = %4.3f, avr %4.0f ms, success: %4.0f ms, %s, %s, %s \n [%4.3f, %4.0f,  %4.0f]", 
-                attempts_successful_, attempts_total_,  rate_success, avr_duration_total, avr_duration_successful,
-                (priorityRescheduling_?"PR= on":"PR= off"), (speedRescheduling_?"SR= on":"SR= off"), (collisionResolver_?"CR= on":"CR= off"),
-                rate_success, avr_duration_total, avr_duration_successful);
-
-
-          id_++;
-      } else if ( !got_map_ || !got_graph_ ) {
-          publishEmpty();
-          ROS_INFO ( "%s: Multi Robot Router: No Map or Graph received", n_param_.getNamespace().c_str() );
-      } else {
-          publishEmpty();
-      }
-      
-    } else {
-      ROS_INFO("Multi Robot Router: the robot associated with the goal has not subscribed to the router");
-    }
-
-    
-}
 
 
 void Router_Node::updateTimeout ( const float _secs ) {
@@ -296,14 +239,6 @@ void Router_Node::mapCallback ( const nav_msgs::OccupancyGrid &_map ) {
 }
 
 
-float Router_Node::calcRadius ( const int shape, const std::vector<float> &shape_variables ) const {
-    tuw_multi_robot_msgs::RobotInfo ri;
-    if ( shape == ri.SHAPE_CIRCLE ) {
-        return shape_variables[0];
-    }
-
-    return -1;
-}
 
 void Router_Node::robotInfoCallback ( const tuw_multi_robot_msgs::RobotInfo &_robotInfo ) {
 
@@ -431,6 +366,31 @@ bool Router_Node::addSingleRobot ( std::vector<float> &_radius, std::vector<Eige
      
 }
 
+void Router_Node::goalIdCallback ( const tuw_multi_robot_msgs::RobotGoals &_goal ) {
+
+    // Check if the robot associated with goal is subscribed to the router
+    bool isRobotSubscribed=false;
+    for(auto it=subscribed_robots_.begin();it!=subscribed_robots_.end();it++) {
+      if(!_goal.robot_name.compare((*it)->robot_name)) {
+        isRobotSubscribed=true;
+        break;
+      }
+    }
+
+    // If the robot is subscribed
+    if(isRobotSubscribed) {
+      planner_prepared_ = false;
+      planner_prepared_ = addSingleRobot ( radius_, starts_, goals_, _goal, robot_names_ );
+
+      plan();
+      
+    } else {
+      ROS_INFO("Multi Robot Router: the robot associated with the goal has not subscribed to the router");
+    }
+
+    
+}
+
 
 bool Router_Node::preparePlanning ( std::vector<float> &_radius, std::vector<Eigen::Vector3d> &_starts, std::vector<Eigen::Vector3d> &_goals, const tuw_multi_robot_msgs::RobotGoalsArray &goal_msg, std::vector<std::string> &robot_names ) {
     bool retval = true;
@@ -491,19 +451,30 @@ bool Router_Node::preparePlanning ( std::vector<float> &_radius, std::vector<Eig
     return retval;
 }
 
+
 void Router_Node::goalsCallback ( const tuw_multi_robot_msgs::RobotGoalsArray &_goals ) {
 
-    bool preparationSuccessful = preparePlanning ( radius_, starts_, goals_, _goals, robot_names_ );
+    planner_prepared_=false;   
+    planner_prepared_ = preparePlanning ( radius_, starts_, goals_, _goals, robot_names_ );
     ROS_INFO ( "%s: Number of active robots %lu", n_param_.getNamespace().c_str(), active_robots_.size() );
 
-    if ( preparationSuccessful && got_map_ && got_graph_ ) {
+    plan();
+ 
+}
+
+
+void Router_Node::plan() {
+
+    if ( planner_prepared_ && got_map_ && got_graph_ ) {
         attempts_total_++;
+        // Try to find a plan
         auto t1 = std::chrono::high_resolution_clock::now();
-        preparationSuccessful &= makePlan ( starts_, goals_, radius_, distMap_, mapResolution_, mapOrigin_, graph_, robot_names_ );
+        plan_found_=false;
+        plan_found_ = makePlan ( starts_, goals_, radius_, distMap_, mapResolution_, mapOrigin_, graph_, robot_names_ );
         auto t2 = std::chrono::high_resolution_clock::now();
         int duration = std::chrono::duration_cast<std::chrono::milliseconds> ( t2 - t1 ).count();
         sum_processing_time_total_ += duration;
-        if ( preparationSuccessful ) {
+        if ( plan_found_ ) {
             int nx = distMap_.cols;
             int ny = distMap_.rows;
 
@@ -526,8 +497,8 @@ void Router_Node::goalsCallback ( const tuw_multi_robot_msgs::RobotGoalsArray &_
               (priorityRescheduling_?"PR= on":"PR= off"), (speedRescheduling_?"SR= on":"SR= off"), (collisionResolver_?"CR= on":"CR= off"),
               rate_success, avr_duration_total, avr_duration_successful);
 
-
         id_++;
+
     } else if ( !got_map_ || !got_graph_ ) {
         publishEmpty();
         ROS_INFO ( "%s: Multi Robot Router: No Map or Graph received", n_param_.getNamespace().c_str() );
@@ -536,13 +507,6 @@ void Router_Node::goalsCallback ( const tuw_multi_robot_msgs::RobotGoalsArray &_
     }
 }
 
-float Router_Node::getYaw ( const geometry_msgs::Quaternion &_rot ) {
-    double roll, pitch, yaw;
-
-    tf::Quaternion q ( _rot.x, _rot.y, _rot.z, _rot.w );
-    tf::Matrix3x3 ( q ).getRPY ( roll, pitch, yaw );
-    return yaw;
-}
 
 void Router_Node::publishEmpty() {
     if(publish_routing_table_ == false) return;
@@ -566,6 +530,7 @@ void Router_Node::publishEmpty() {
     mrrp_status_.duration = getDuration_ms();
     pubPlannerStatus_.publish ( mrrp_status_ );
 }
+
 
 void Router_Node::publish() {
     if(publish_routing_table_ == false) return;
@@ -675,6 +640,26 @@ void Router_Node::publish() {
 
     pubPlannerStatus_.publish ( ps );
 }
+
+
+float Router_Node::getYaw ( const geometry_msgs::Quaternion &_rot ) {
+    double roll, pitch, yaw;
+
+    tf::Quaternion q ( _rot.x, _rot.y, _rot.z, _rot.w );
+    tf::Matrix3x3 ( q ).getRPY ( roll, pitch, yaw );
+    return yaw;
+}
+
+
+float Router_Node::calcRadius ( const int shape, const std::vector<float> &shape_variables ) const {
+    tuw_multi_robot_msgs::RobotInfo ri;
+    if ( shape == ri.SHAPE_CIRCLE ) {
+        return shape_variables[0];
+    }
+
+    return -1;
+}
+
 
 size_t Router_Node::getHash ( const std::vector<signed char> &_map, const Eigen::Vector2d &_origin, const float &_resolution ) {
     std::size_t seed = 0;
