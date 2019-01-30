@@ -42,7 +42,7 @@ int main ( int argc, char **argv ) {
     ros::init ( argc, argv, "tuw_multi_robot_router" ); /// initializes the ros node with default name
     ros::NodeHandle n;
 
-    ros::Rate r ( 5 );
+    ros::Rate r ( 1 );
 
     multi_robot_router::Router_Node node ( n );
 
@@ -308,6 +308,7 @@ float Router_Node::calcRadius ( const int shape, const std::vector<float> &shape
 void Router_Node::robotInfoCallback ( const tuw_multi_robot_msgs::RobotInfo &_robotInfo ) {
 
     auto robot = RobotInfo::findObj ( subscribed_robots_, _robotInfo.robot_name );
+    // If new robot connected, add it to the router
     if ( robot == subscribed_robots_.end() ) {
         // create new entry
         RobotInfoPtr robot_new = std::make_shared<RobotInfo> ( _robotInfo );
@@ -369,6 +370,7 @@ void Router_Node::graphCallback ( const tuw_multi_robot_msgs::Graph &msg ) {
 }
 
 bool Router_Node::addSingleRobot ( std::vector<float> &_radius, std::vector<Eigen::Vector3d> &_starts, std::vector<Eigen::Vector3d> &_goals, const tuw_multi_robot_msgs::RobotGoals &goal_msg,std::vector<std::string> &_robot_names ) {
+
     bool retval = true;
     int single_robot_index=-1;
     // Find the corresponding robot index in the robot names
@@ -389,12 +391,18 @@ bool Router_Node::addSingleRobot ( std::vector<float> &_radius, std::vector<Eige
       for ( int k = 0; k < _robot_names.size(); k++ ) {
         RobotInfoPtrIterator active_robot = RobotInfo::findObj ( subscribed_robots_, _robot_names[k] );
         if(active_robot!=subscribed_robots_.end())
-          _starts.push_back ( ( *active_robot )->getPose() );
+          if((ros::Time::now()-( *active_robot )->header.stamp) < ros::Duration(1.0))
+             _starts.push_back ( ( *active_robot )->getPose() );
+          else {
+             ROS_ERROR("Robot pose info is too old, waiting for better data");
+             _starts.push_back ( ( *active_robot )->getPose() );
+          }
         else
           ROS_INFO("Robot was not found");
       }
 
     } else {
+
       // If robot was not part of the planning, then add it
       RobotInfoPtrIterator active_robot = RobotInfo::findObj ( subscribed_robots_, 
                                                                goal_msg.robot_name );
