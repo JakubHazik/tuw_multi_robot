@@ -86,6 +86,7 @@ LocalBehaviorControllerNode::LocalBehaviorControllerNode ( ros::NodeHandle &n )
 
 void LocalBehaviorControllerNode::updatePath() {
 
+    bool try_reach_goal=false;
     bool valid = true;
     size_t last_active_segment = 0;
     // Go through all segments in the route
@@ -114,6 +115,10 @@ void LocalBehaviorControllerNode::updatePath() {
         } else {
             break;
         }
+
+        // If no preconditions then we are trying to reach the goal
+        if(i == route_.segments.size()-1) 
+          try_reach_goal=true;
     }
 
     if(last_active_segment > path_segment_end) {
@@ -131,6 +136,13 @@ void LocalBehaviorControllerNode::updatePath() {
             pose_stamped.pose.position = route_.segments.at(i).end.position;
             pose_stamped.pose.orientation = route_.segments.at(i).end.orientation; 
             path_.poses.push_back(pose_stamped);
+        }
+
+        // If robot is not trying to reach the goal, then the orientation should be computed from the segment orientation
+        if(!try_reach_goal) {
+            yaw=atan2(route_.segments.at(path_segment_end).end.position.y-route_.segments.at(path_segment_end).start.position.y,
+                      route_.segments.at(path_segment_end).end.position.x-route_.segments.at(path_segment_end).start.position.x);
+            path_.poses.back().pose.orientation=tf::createQuaternionMsgFromYaw(yaw);
         }
 
         // Send the path or goal to the robot
