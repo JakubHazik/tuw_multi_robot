@@ -183,8 +183,19 @@ void Router_Node::labelledGoalCallback ( const tuw_multi_robot_msgs::RobotGoals 
 
     // If the robot is subscribed
     if(isRobotSubscribed) {
-      // Add robot to the planned goals
-      goals_msg_.robots.push_back(_goal);
+      // If goal already exists for the robot, replace it
+      bool found_goal=false; 
+      for( auto goal : goals_msg_.robots ) {
+        if(!goal.robot_name.compare(_goal.robot_name)) {
+          goal=_goal;
+          found_goal=true;
+          break;
+        }
+      }
+      // If no existing goal for this robot, then add it
+      if(!found_goal)
+        goals_msg_.robots.push_back(_goal);
+
       // Plan the route
       plan();
       
@@ -404,6 +415,52 @@ void Router_Node::graphCallback ( const tuw_multi_robot_msgs::Graph &msg ) {
 } */
 
 
+void Router_Node::plan() {
+
+    planner_prepared_ = false;
+    planner_prepared_ = preparePlanning ( radius_, starts_, goals_, goals_msg_, robot_names_ );
+
+    if ( planner_prepared_ && got_map_ && got_graph_ ) {
+        attempts_total_++;
+        // Try to find a plan
+        auto t1 = std::chrono::high_resolution_clock::now();
+        plan_found_=false;
+        plan_found_ = makePlan ( starts_, goals_, radius_, distMap_, mapResolution_, mapOrigin_, graph_, robot_names_ );
+        auto t2 = std::chrono::high_resolution_clock::now();
+        int duration = std::chrono::duration_cast<std::chrono::milliseconds> ( t2 - t1 ).count();
+        sum_processing_time_total_ += duration;
+        if ( plan_found_ ) {
+            int nx = distMap_.cols;
+            int ny = distMap_.rows;
+
+            double res = mapResolution_;
+            int cx = mapOrigin_[0];
+            int cy = mapOrigin_[1];
+
+            publish();
+            attempts_successful_++;
+            sum_processing_time_successful_ += duration;
+            freshPlan_ = false;
+        } else {
+            publishEmpty();
+        }
+        float rate_success = ((float) attempts_successful_) / (float) attempts_total_;
+        float avr_duration_total = sum_processing_time_total_ / (float) attempts_total_;
+        float avr_duration_successful = sum_processing_time_successful_ / (float) attempts_successful_;
+        ROS_INFO ( "\nSuccess %i, %i = %4.3f, avr %4.0f ms, success: %4.0f ms, %s, %s, %s \n [%4.3f, %4.0f,  %4.0f]", 
+              attempts_successful_, attempts_total_,  rate_success, avr_duration_total, avr_duration_successful,
+              (priorityRescheduling_?"PR= on":"PR= off"), (speedRescheduling_?"SR= on":"SR= off"), (collisionResolver_?"CR= on":"CR= off"),
+              rate_success, avr_duration_total, avr_duration_successful);
+
+        id_++;
+
+    } else if ( !got_map_ || !got_graph_ ) {
+        publishEmpty();
+        ROS_INFO ( "%s: Multi Robot Router: No Map or Graph received", n_param_.getNamespace().c_str() );
+    } else {
+        publishEmpty();
+    }
+}
 
 
 bool Router_Node::preparePlanning ( std::vector<float> &_radius, std::vector<Eigen::Vector3d> &_starts, std::vector<Eigen::Vector3d> &_goals, const tuw_multi_robot_msgs::RobotGoalsArray &goal_msg, std::vector<std::string> &robot_names ) {
@@ -463,56 +520,6 @@ bool Router_Node::preparePlanning ( std::vector<float> &_radius, std::vector<Eig
     }
 
     return retval;
-}
-
-
-
-
-void Router_Node::plan() {
-
-    planner_prepared_ = false;
-    planner_prepared_ = preparePlanning ( radius_, starts_, goals_, goals_msg_, robot_names_ );
-
-    if ( planner_prepared_ && got_map_ && got_graph_ ) {
-        attempts_total_++;
-        // Try to find a plan
-        auto t1 = std::chrono::high_resolution_clock::now();
-        plan_found_=false;
-        plan_found_ = makePlan ( starts_, goals_, radius_, distMap_, mapResolution_, mapOrigin_, graph_, robot_names_ );
-        auto t2 = std::chrono::high_resolution_clock::now();
-        int duration = std::chrono::duration_cast<std::chrono::milliseconds> ( t2 - t1 ).count();
-        sum_processing_time_total_ += duration;
-        if ( plan_found_ ) {
-            int nx = distMap_.cols;
-            int ny = distMap_.rows;
-
-            double res = mapResolution_;
-            int cx = mapOrigin_[0];
-            int cy = mapOrigin_[1];
-
-            publish();
-            attempts_successful_++;
-            sum_processing_time_successful_ += duration;
-            freshPlan_ = false;
-        } else {
-            publishEmpty();
-        }
-        float rate_success = ((float) attempts_successful_) / (float) attempts_total_;
-        float avr_duration_total = sum_processing_time_total_ / (float) attempts_total_;
-        float avr_duration_successful = sum_processing_time_successful_ / (float) attempts_successful_;
-        ROS_INFO ( "\nSuccess %i, %i = %4.3f, avr %4.0f ms, success: %4.0f ms, %s, %s, %s \n [%4.3f, %4.0f,  %4.0f]", 
-              attempts_successful_, attempts_total_,  rate_success, avr_duration_total, avr_duration_successful,
-              (priorityRescheduling_?"PR= on":"PR= off"), (speedRescheduling_?"SR= on":"SR= off"), (collisionResolver_?"CR= on":"CR= off"),
-              rate_success, avr_duration_total, avr_duration_successful);
-
-        id_++;
-
-    } else if ( !got_map_ || !got_graph_ ) {
-        publishEmpty();
-        ROS_INFO ( "%s: Multi Robot Router: No Map or Graph received", n_param_.getNamespace().c_str() );
-    } else {
-        publishEmpty();
-    }
 }
 
 
