@@ -45,7 +45,9 @@
 #include <tuw_global_router/router.h>
 #include <tuw_global_router/mrr_utils.h>
 #include <opencv/cv.hpp>
-
+#include <mutex>
+#include <tuw_multi_robot_msgs/RegisterRobot.h>
+// #include <tuw_multi_robot_msgs/UnregisterRobot.h>
 //TODO disable got_map if not used
 
 namespace multi_robot_router
@@ -66,7 +68,7 @@ public:
      * @brief publishes a RoutingTable
      */
     void publish();
-    
+
     /**
      * @brief monitors the execution
      */
@@ -85,7 +87,7 @@ private:
     int attempts_successful_;
     double sum_processing_time_total_;
     double sum_processing_time_successful_;
-    
+
     ros::Time time_first_robot_started_;
 
     tuw_multi_robot_msgs::RouterStatus mrrp_status_;
@@ -110,7 +112,7 @@ private:
     cv::Mat distMap_;
     Eigen::Vector2d mapOrigin_;
     float mapResolution_;
-    
+
     std::string route_topic_;
     std::string odom_topic_;
     std::string path_topic_;
@@ -120,11 +122,11 @@ private:
     std::string voronoi_topic_;
     std::string planner_status_topic_;
     std::string singleRobotGoalTopic_;
-    std::string singleRobotIdGoalTopic_; // A topic to send a goal to a robot specified by its id 
+    std::string singleRobotIdGoalTopic_; // A topic to send a goal to a robot specified by its id
                                          // R.Desarzens
     std::string singleRobotName_;
-   
-    std::string frame_id_; 
+
+    std::string frame_id_;
     bool single_robot_mode_;
     bool publish_routing_table_;
     bool got_map_ = false;
@@ -136,14 +138,23 @@ private:
     float topic_timeout_s_ = 10;
     bool freshPlan_ = false;
     bool monitor_enabled_;
-  
-    // Stores robot's state variable as attribute to allow modification of a specific goal while 
-    // keeping the others (R. Desarzens) 
+
+    // Stores robot's state variable as attribute to allow modification of a specific goal while
+    // keeping the others (R. Desarzens)
     std::vector<Eigen::Vector3d> starts_; // starting position of each robot
     std::vector<Eigen::Vector3d> goals_; // goal of each robot
     std::vector<float> radius_; // radius of each robot
     std::vector<std::string> robot_names_; // id of each robots
- 
+
+    // Robot registration - J. Mendes
+    ros::ServiceServer register_service_;
+    bool registerNewRobotCB(tuw_multi_robot_msgs::RegisterRobot::Request& req, tuw_multi_robot_msgs::RegisterRobot::Response& res);
+    int num_of_robots_;
+    int max_robots_;
+    double noinfo_timeout_;
+    std::vector<std::string> ids_;
+    std::mutex reg_mutex_;
+
     void parametersCallback ( tuw_multi_robot_router::routerConfig &config, uint32_t level );
     void odomCallback ( const ros::MessageEvent<nav_msgs::Odometry const> &_event, int _topic );
     void graphCallback ( const tuw_multi_robot_msgs::Graph &msg );
@@ -162,7 +173,7 @@ private:
     float getYaw ( const geometry_msgs::Quaternion &_rot );
     float calcRadius ( const int shape, const std::vector<float> &shape_variables ) const;
     bool preparePlanning ( std::vector<float> &_radius, std::vector<Eigen::Vector3d> &_starts, std::vector<Eigen::Vector3d> &_goals, const tuw_multi_robot_msgs::RobotGoalsArray &_ros_goals, std::vector<std::string> &robot_names );
-    bool addSingleRobot ( std::vector<float> &_radius, std::vector<Eigen::Vector3d> &_starts, std::vector<Eigen::Vector3d> &_goals, const tuw_multi_robot_msgs::RobotGoals &goal_msg, std::vector<std::string> &robot_names ); 
+    bool addSingleRobot ( std::vector<float> &_radius, std::vector<Eigen::Vector3d> &_starts, std::vector<Eigen::Vector3d> &_goals, const tuw_multi_robot_msgs::RobotGoals &goal_msg, std::vector<std::string> &robot_names );
 };
 } // namespace multi_robot_router
 #endif // Router_Node_H

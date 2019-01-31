@@ -34,6 +34,8 @@
 #include <boost/functional/hash.hpp>
 #include <boost/regex.hpp>
 #include <tf/tf.h>
+#include <unordered_map>
+#include <libssh/libssh.h>
 
 //TODO add Weights from robots...
 
@@ -74,7 +76,7 @@ Router_Node::Router_Node ( ros::NodeHandle &_n ) : Router(),
     n_param_.param<bool> ( "single_robot_mode", single_robot_mode_, false );
 
     n_param_.param<std::string> ( "robot_goal", singleRobotGoalTopic_, "/goal" );
-    
+
     n_param_.param<std::string> ( "robot_id_goal", singleRobotIdGoalTopic_, "/goal_id" );
 
     n_param_.param<std::string> ( "frame_id", frame_id_, frame_id_ );
@@ -101,6 +103,69 @@ Router_Node::Router_Node ( ros::NodeHandle &_n ) : Router(),
     //dynamic reconfigure
     call_type = boost::bind ( &Router_Node::parametersCallback, this, _1, _2 );
     param_server.setCallback ( call_type );
+
+    // Registration/unregistration services - J. Mendes
+    n_param_.param<int>("max_robots", max_robots_, 100);
+    n_param_.param<double>("noinfo_timeout", noinfo_timeout_, 15.);
+    num_of_robots_ = 0;
+    register_service_ = n_.advertiseService("register_robot", &Router_Node::registerNewRobotCB, this);
+    // unregister_service_ = nh.advertiseService("unregister_robot", &Router_Node::unregisterRobotCB, this);
+    ROS_INFO("Register robot service advertised.");
+}
+
+bool Router_Node::registerNewRobotCB(tuw_multi_robot_msgs::RegisterRobot::Request& req,
+                                     tuw_multi_robot_msgs::RegisterRobot::Response& res)
+{
+    std::lock_guard<std::mutex> lock(reg_mutex_);
+    if (num_of_robots_ > max_robots_ - 1)
+    {
+        ROS_ERROR(
+            "Cannot register new robot. Maximum number of robots that can be registered is %d", max_robots_);
+        res.ack = false;
+        return true;
+    }
+
+    // Authentification
+
+    ssh_session session = ssh_new();
+    if (session == NULL)
+        return false;
+
+    int rc;
+    rc = ssh_userauth_publickey_auto(session, NULL, NULL);
+    if (rc == SSH_AUTH_ERROR)
+    {
+        ROS_ERROR(
+            "Cannot register the robot. Router authentication failed. %s", ssh_get_error(session));
+        return false;
+    }
+    // auth ok, close the session and proceed
+    ssh_free(session);
+
+    // std::ostringstream ss;
+    // ss << std::setw(5) << std::setfill('0') << 12 << "\n";
+    // std::string s2(ss.str());
+
+    // res.id = "robot_" + std::to_string(num_of_robots_);
+    // res.id = req.ros_namespace.substr(1, req.ros_namespace.length());         // FIXME
+
+    // PublisherMap::iterator robot_it = robots_.find(res.id);
+    // if (robot_it == robots_.end())
+    // {
+    // pubs_[res.id] = std::make_shared<ros::Publisher>(nh_.advertise<mrs_lp_msgs::CommList>(req.ros_namespace + "/comm_list", 1));
+    // }
+
+    ROS_INFO_STREAM("Registered new robot: " << req.id);
+    // ROS_INFO_STREAM("Registered new robot: Robot_" << res.id << " at host " << req.robot_hostname);
+    num_of_robots_++;
+    ids_.push_back(req.id);
+
+    // loc_subs_[res.id] = std::make_shared<ros::Subscriber>(nh_.subscribe("/" + res.id + "/localization", 1, &ResgistrationCenter::locCB_, this));
+
+    // locCB_last_call_[res.id] = ros::Time::now();
+
+    res.ack = true;
+    return true;
 }
 
 void Router_Node::monitorExecution() {
@@ -142,15 +207,15 @@ void Router_Node::monitorExecution() {
 }
 
 void Router_Node::goalCallback ( const geometry_msgs::PoseStamped &msg ) {
-    
+
     if ( subscribed_robots_.size() != 1 ) {
         ROS_WARN ( "No robot subsribed, ou have to publish a tuw_multi_robot_msgs::RobotInfo to let the planer know where your robot is located!");
         ROS_WARN ( "Use a local behavior controller to publish regual a RobotInfo msg!");
         return;
-    } 
+    }
     tuw_multi_robot_msgs::RobotGoalsArray goalsArray;
     goalsArray.header = msg.header;
-    goalsArray.robots.resize(1);    
+    goalsArray.robots.resize(1);
     tuw_multi_robot_msgs::RobotGoals &goals = goalsArray.robots[0];
     goals.robot_name = subscribed_robots_[0]->robot_name;
     goals.destinations.resize(1);
@@ -196,7 +261,7 @@ void Router_Node::goalIdCallback ( const tuw_multi_robot_msgs::RobotGoals &_goal
           float rate_success = ((float) attempts_successful_) / (float) attempts_total_;
           float avr_duration_total = sum_processing_time_total_ / (float) attempts_total_;
           float avr_duration_successful = sum_processing_time_successful_ / (float) attempts_successful_;
-          ROS_INFO ( "\nSuccess %i, %i = %4.3f, avr %4.0f ms, success: %4.0f ms, %s, %s, %s \n [%4.3f, %4.0f,  %4.0f]", 
+          ROS_INFO ( "\nSuccess %i, %i = %4.3f, avr %4.0f ms, success: %4.0f ms, %s, %s, %s \n [%4.3f, %4.0f,  %4.0f]",
                 attempts_successful_, attempts_total_,  rate_success, avr_duration_total, avr_duration_successful,
                 (priorityRescheduling_?"PR= on":"PR= off"), (speedRescheduling_?"SR= on":"SR= off"), (collisionResolver_?"CR= on":"CR= off"),
                 rate_success, avr_duration_total, avr_duration_successful);
@@ -209,12 +274,12 @@ void Router_Node::goalIdCallback ( const tuw_multi_robot_msgs::RobotGoals &_goal
       } else {
           publishEmpty();
       }
-      
+
     } else {
       ROS_INFO("Multi Robot Router: the robot associated with the goal has not subscribed to the router");
     }
 
-    
+
 }
 
 
@@ -377,9 +442,9 @@ bool Router_Node::addSingleRobot ( std::vector<float> &_radius, std::vector<Eige
         single_robot_index=k;
       }
     }
-  
-    // If the robot was already part of the planning, just change its goal and update starting positions 
-    if( single_robot_index != -1 ) { 
+
+    // If the robot was already part of the planning, just change its goal and update starting positions
+    if( single_robot_index != -1 ) {
       // Change the corresponding goal
       geometry_msgs::Pose p = goal_msg.destinations[0];
       _goals.at(single_robot_index) = ( Eigen::Vector3d ( p.position.x, p.position.y, getYaw ( p.orientation ) ) );
@@ -396,12 +461,12 @@ bool Router_Node::addSingleRobot ( std::vector<float> &_radius, std::vector<Eige
 
     } else {
       // If robot was not part of the planning, then add it
-      RobotInfoPtrIterator active_robot = RobotInfo::findObj ( subscribed_robots_, 
+      RobotInfoPtrIterator active_robot = RobotInfo::findObj ( subscribed_robots_,
                                                                goal_msg.robot_name );
       active_robots_.push_back( *active_robot );
-      // Add radius 
+      // Add radius
       _radius.push_back( ( *active_robot )->radius() );
-      // Change name 
+      // Change name
       _robot_names.push_back(goal_msg.robot_name);
       // Add the corresponding goal
       geometry_msgs::Pose p = goal_msg.destinations[0];
@@ -415,11 +480,11 @@ bool Router_Node::addSingleRobot ( std::vector<float> &_radius, std::vector<Eige
         else
           ROS_INFO("Robot was not found");
       }
-   
+
     }
 
     return retval;
-     
+
 }
 
 
@@ -434,7 +499,7 @@ bool Router_Node::preparePlanning ( std::vector<float> &_radius, std::vector<Eig
     std::vector<std::string> active_robots_name;
     for ( int k = 0; k < goal_msg.robots.size(); k++ ) {
       active_robots_name.push_back(goal_msg.robots[k].robot_name);
-    } 
+    }
 
     for ( int k = 0; k < subscribed_robots_.size(); k++ ) {
         RobotInfoPtrIterator active_robot = RobotInfo::findObj ( subscribed_robots_, subscribed_robots_[k]->robot_name );
@@ -442,7 +507,7 @@ bool Router_Node::preparePlanning ( std::vector<float> &_radius, std::vector<Eig
         // For each robot, if there is a new goal for it, then use it
         for(auto it=goal_msg.robots.begin();it!=goal_msg.robots.end();it++) {
           if(!subscribed_robots_[k]->robot_name.compare(it->robot_name) ) {
-            active_goal=it; 
+            active_goal=it;
           }
         }
 
@@ -470,7 +535,7 @@ bool Router_Node::preparePlanning ( std::vector<float> &_radius, std::vector<Eig
             continue;
 
         }
-    
+
     }
 
 
@@ -512,7 +577,7 @@ void Router_Node::goalsCallback ( const tuw_multi_robot_msgs::RobotGoalsArray &_
         float rate_success = ((float) attempts_successful_) / (float) attempts_total_;
         float avr_duration_total = sum_processing_time_total_ / (float) attempts_total_;
         float avr_duration_successful = sum_processing_time_successful_ / (float) attempts_successful_;
-        ROS_INFO ( "\nSuccess %i, %i = %4.3f, avr %4.0f ms, success: %4.0f ms, %s, %s, %s \n [%4.3f, %4.0f,  %4.0f]", 
+        ROS_INFO ( "\nSuccess %i, %i = %4.3f, avr %4.0f ms, success: %4.0f ms, %s, %s, %s \n [%4.3f, %4.0f,  %4.0f]",
               attempts_successful_, attempts_total_,  rate_success, avr_duration_total, avr_duration_successful,
               (priorityRescheduling_?"PR= on":"PR= off"), (speedRescheduling_?"SR= on":"SR= off"), (collisionResolver_?"CR= on":"CR= off"),
               rate_success, avr_duration_total, avr_duration_successful);
@@ -710,5 +775,3 @@ std::size_t Router_Node::getHash ( const std::vector<Segment> &_graph ) {
 
 
 } // namespace multi_robot_router
-
-
