@@ -89,6 +89,24 @@ LocalBehaviorControllerNode::LocalBehaviorControllerNode ( ros::NodeHandle &n )
 
     int rc;
     rc = ssh_userauth_publickey_auto(session, NULL, NULL);
+
+    switch(rc)
+    {
+        case SSH_AUTH_ERROR:
+            ROS_INFO("A serious error happened");
+            break;
+        case SSH_AUTH_DENIED:
+            ROS_INFO("The server doesn't accept that public key as an authentication token. Try another key or another method");
+            break;
+        case SSH_AUTH_PARTIAL:
+            ROS_INFO("You've been partially authenticated, you still have to use another method");
+            break;
+        case SSH_AUTH_SUCCESS:
+            ROS_INFO("The public key is accepted, you want now to use ssh_userauth_publickey()");
+            break;
+        case SSH_AUTH_AGAIN:
+            ROS_INFO("In nonblocking mode, you've got to call this again later");
+    }
     if (rc == SSH_AUTH_ERROR)
     {
         ROS_ERROR(
@@ -108,16 +126,17 @@ LocalBehaviorControllerNode::LocalBehaviorControllerNode ( ros::NodeHandle &n )
     // Service request
     tuw_multi_robot_msgs::RegisterRobot srv;
 
-    if(const char* robot_id = std::getenv("ROBOT_ID"))
-    {
-        srv.request.id = robot_id;
-    }
-    else
-    {
-        // Kill the node with error message
-        ROS_ERROR("Unable to get ROBOT_ID env var.");
-        return;
-    }
+    srv.request.id = robot_name_;
+    // if(const char* robot_id = std::getenv("ROBOT_ID"))
+    // {
+    //     srv.request.id = robot_id;
+    // }
+    // else
+    // {
+    //     // Kill the node with error message
+    //     ROS_ERROR("Unable to get ROBOT_ID env var.");
+    //     return;
+    // }
 
     ros::Time begin = ros::Time::now();
     // Send request
@@ -132,7 +151,6 @@ LocalBehaviorControllerNode::LocalBehaviorControllerNode ( ros::NodeHandle &n )
     {
         // Successfully register with registration center
         ROS_INFO_STREAM("Registration delay: " <<  round_trip.toSec()*1e3 << " ms");
-        ROS_INFO_STREAM("My Robot ID: " << srv.request.id);
 
         ros::Rate r(update_rate_);
 
