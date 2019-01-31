@@ -141,6 +141,15 @@ void Router_Node::monitorExecution() {
 
 }
 
+
+void Router_Node::updateTimeout ( const float _secs ) {
+    //Todo update timeouts and clear old messages
+    for ( auto robot : subscribed_robots_ ) {
+        ( *robot )->updateOnlineStatus ( _secs );
+    }
+}
+
+
 void Router_Node::goalCallback ( const geometry_msgs::PoseStamped &msg ) {
     
     if ( subscribed_robots_.size() != 1 ) {
@@ -160,13 +169,6 @@ void Router_Node::goalCallback ( const geometry_msgs::PoseStamped &msg ) {
 }
 
 
-
-void Router_Node::updateTimeout ( const float _secs ) {
-    //Todo update timeouts and clear old messages
-    for ( auto it = subscribed_robots_.begin(); it != subscribed_robots_.end(); it++ ) {
-        ( *it )->updateOnlineStatus ( _secs );
-    }
-}
 void Router_Node::parametersCallback ( tuw_multi_robot_router::routerConfig &config, uint32_t level ) {
     // Important set router before settings
     uint32_t threads = config.nr_threads;
@@ -207,6 +209,7 @@ void Router_Node::parametersCallback ( tuw_multi_robot_router::routerConfig &con
     publish_routing_table_ = config.publish_routing_table;
 }
 
+
 void Router_Node::mapCallback ( const nav_msgs::OccupancyGrid &_map ) {
     std::vector<signed char> map = _map.data;
 
@@ -239,7 +242,6 @@ void Router_Node::mapCallback ( const nav_msgs::OccupancyGrid &_map ) {
 }
 
 
-
 void Router_Node::robotInfoCallback ( const tuw_multi_robot_msgs::RobotInfo &_robotInfo ) {
 
     auto robot = RobotInfo::findObj ( subscribed_robots_, _robotInfo.robot_name );
@@ -263,6 +265,7 @@ void Router_Node::robotInfoCallback ( const tuw_multi_robot_msgs::RobotInfo &_ro
         ROS_WARN("More than one robot subscribed, but the MRRP is in single robot mode");
     }
 }
+
 
 void Router_Node::graphCallback ( const tuw_multi_robot_msgs::Graph &msg ) {
     std::vector<Segment> graph;
@@ -305,6 +308,7 @@ void Router_Node::graphCallback ( const tuw_multi_robot_msgs::Graph &msg ) {
     got_graph_ = true;
 }
 
+
 bool Router_Node::addSingleRobot ( std::vector<float> &_radius, std::vector<Eigen::Vector3d> &_starts, std::vector<Eigen::Vector3d> &_goals, const tuw_multi_robot_msgs::RobotGoals &goal_msg,std::vector<std::string> &_robot_names ) {
 
     bool retval = true;
@@ -327,8 +331,7 @@ bool Router_Node::addSingleRobot ( std::vector<float> &_radius, std::vector<Eige
       for ( int k = 0; k < _robot_names.size(); k++ ) {
         RobotInfoPtrIterator active_robot = RobotInfo::findObj ( subscribed_robots_, _robot_names[k] );
         if(active_robot!=subscribed_robots_.end())
-          if((ros::Time::now()-( *active_robot )->header.stamp) < ros::Duration(1.0))
-             _starts.push_back ( ( *active_robot )->getPose() );
+           _starts.push_back ( ( *active_robot )->getPose() );
           else {
              ROS_ERROR("Robot pose info is too old, waiting for better data");
              _starts.push_back ( ( *active_robot )->getPose() );
@@ -365,6 +368,7 @@ bool Router_Node::addSingleRobot ( std::vector<float> &_radius, std::vector<Eige
     return retval;
      
 }
+
 
 void Router_Node::goalIdCallback ( const tuw_multi_robot_msgs::RobotGoals &_goal ) {
 

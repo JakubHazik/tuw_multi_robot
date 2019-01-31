@@ -99,6 +99,10 @@ Eigen::Vector3d RobotInfo::getPose() const {
     return p;
 }
 
+ros::Time RobotInfo::getLastUpdateTime() const {
+    return this->header.stamp; 
+}
+
 float RobotInfo::radius() const {
     if ( shape == SHAPE_CIRCLE ) {
         return shape_variables[0];
@@ -112,14 +116,21 @@ RobotInfo::Online RobotInfo::getOnlineStatus() const {
 }
 
 void RobotInfo::updateOnlineStatus ( const float _updateTime ) {
-    if ( activeTime_ > 0 )
+    
+   if( (ros::Time::now() - this->header.stamp) < ros::Duration(2.0)) 
+     online_ = Online::unreachable;
+   else
+     online_ = Online::active;     
+
+   // Original code, but not useful in our case since we just want to check the connection
+   /* if ( activeTime_ > 0 )
         activeTime_ -= _updateTime;
 
     if ( activeTime_ < 0 )
         activeTime_ = 0;
 
     if ( activeTime_ == 0 && online_ != Online::fixed )
-        online_ = Online::inactive;
+        online_ = Online::inactive; */
 }
 
 } // namespace multi_robot_router

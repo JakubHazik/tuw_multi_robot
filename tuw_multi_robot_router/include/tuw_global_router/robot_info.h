@@ -79,12 +79,19 @@ class RobotInfo : public tuw_multi_robot_msgs::RobotInfo
     {
         inactive,
         active,
-        fixed
+        fixed,
+        unreachable
     };
    
      
     void updateInfo(const tuw_multi_robot_msgs::RobotInfo &info);
-    
+   
+
+    /**
+     * @brief return the time stamp of the last information received
+     **/
+    ros::Time getLastUpdateTime() const;
+ 
     /**
      * @brief Creates subscribers and publishers using a given namespace
      * @param n node handler
