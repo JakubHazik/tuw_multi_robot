@@ -125,7 +125,7 @@ bool Router_Node::registerNewRobotCB(tuw_multi_robot_msgs::RegisterRobot::Reques
         return true;
     }
 
-    // Authentification
+    // Authentification - authorized_keys have to be up to date
 
     ssh_session session = ssh_new();
     if (session == NULL)
