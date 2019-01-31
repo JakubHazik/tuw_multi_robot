@@ -116,7 +116,7 @@ private:
     float calcRadius ( const int shape, const std::vector<float> &shape_variables ) const;
 
     bool preparePlanning ( std::vector<float> &_radius, std::vector<Eigen::Vector3d> &_starts, std::vector<Eigen::Vector3d> &_goals, const tuw_multi_robot_msgs::RobotGoalsArray &_ros_goals, std::vector<std::string> &robot_names );
-    bool addSingleRobot ( std::vector<float> &_radius, std::vector<Eigen::Vector3d> &_starts, std::vector<Eigen::Vector3d> &_goals, const tuw_multi_robot_msgs::RobotGoals &goal_msg, std::vector<std::string> &robot_names );
+    // bool addSingleRobot ( std::vector<float> &_radius, std::vector<Eigen::Vector3d> &_starts, std::vector<Eigen::Vector3d> &_goals, const tuw_multi_robot_msgs::RobotGoals &goal_msg, std::vector<std::string> &robot_names );
  
     // These members are for logging
     int attempts_total_;
@@ -161,6 +161,7 @@ private:
     bool plan_found_ = false;
     bool got_map_ = false;
     bool got_graph_ = false;
+    tuw_multi_robot_msgs::RobotGoalsArray goals_msg_;   ///< goals received for each robot
     std::vector<Eigen::Vector3d> starts_;               ///< starting position of each robot
     std::vector<Eigen::Vector3d> goals_;                ///< goal of each robot
     std::vector<float> radius_;                         ///< radius of each robot

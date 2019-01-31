@@ -145,7 +145,7 @@ void Router_Node::monitorExecution() {
 void Router_Node::updateTimeout ( const float _secs ) {
     //Todo update timeouts and clear old messages
     for ( auto robot : subscribed_robots_ ) {
-        ( *robot )->updateOnlineStatus ( _secs );
+        robot->updateOnlineStatus ( _secs );
     }
 }
 
@@ -309,7 +309,7 @@ void Router_Node::graphCallback ( const tuw_multi_robot_msgs::Graph &msg ) {
 }
 
 
-bool Router_Node::addSingleRobot ( std::vector<float> &_radius, std::vector<Eigen::Vector3d> &_starts, std::vector<Eigen::Vector3d> &_goals, const tuw_multi_robot_msgs::RobotGoals &goal_msg,std::vector<std::string> &_robot_names ) {
+/*bool Router_Node::addSingleRobot ( std::vector<float> &_radius, std::vector<Eigen::Vector3d> &_starts, std::vector<Eigen::Vector3d> &_goals, const tuw_multi_robot_msgs::RobotGoals &goal_msg,std::vector<std::string> &_robot_names ) {
 
     bool retval = true;
     int single_robot_index=-1;
@@ -332,10 +332,6 @@ bool Router_Node::addSingleRobot ( std::vector<float> &_radius, std::vector<Eige
         RobotInfoPtrIterator active_robot = RobotInfo::findObj ( subscribed_robots_, _robot_names[k] );
         if(active_robot!=subscribed_robots_.end())
            _starts.push_back ( ( *active_robot )->getPose() );
-          else {
-             ROS_ERROR("Robot pose info is too old, waiting for better data");
-             _starts.push_back ( ( *active_robot )->getPose() );
-          }
         else
           ROS_INFO("Robot was not found");
       }
@@ -367,7 +363,7 @@ bool Router_Node::addSingleRobot ( std::vector<float> &_radius, std::vector<Eige
 
     return retval;
      
-}
+} */
 
 
 void Router_Node::goalIdCallback ( const tuw_multi_robot_msgs::RobotGoals &_goal ) {
@@ -383,8 +379,11 @@ void Router_Node::goalIdCallback ( const tuw_multi_robot_msgs::RobotGoals &_goal
 
     // If the robot is subscribed
     if(isRobotSubscribed) {
+      // Add robot to the planned goals
+      goals_msg_.robots.push_back(_goal);
+
       planner_prepared_ = false;
-      planner_prepared_ = addSingleRobot ( radius_, starts_, goals_, _goal, robot_names_ );
+      planner_prepared_ = preparePlanning ( radius_, starts_, goals_, goals_msg_, robot_names_ );
 
       plan();
       
