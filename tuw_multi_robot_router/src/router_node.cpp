@@ -51,6 +51,7 @@ int main ( int argc, char **argv ) {
         ros::spinOnce();
         node.monitorExecution();
         node.updateTimeout ( r.expectedCycleTime().toSec() );
+        // node.plan();
    }
 
     return 0;
@@ -77,7 +78,7 @@ Router_Node::Router_Node ( ros::NodeHandle &_n ) : Router(),
     subMap_ = n_.subscribe ( "map", 1, &Router_Node::mapCallback, this );
     subVoronoiGraph_ = n_.subscribe ( "segments", 1, &Router_Node::graphCallback, this );
     subRobotInfo_ = n_.subscribe ( "robot_info" , 10000, &Router_Node::robotInfoCallback, this );
-    subSingleRobotIdGoal_ = n_.subscribe ( "robot_id_goal", 1, &Router_Node::goalIdCallback, this );
+    subSingleRobotIdGoal_ = n_.subscribe ( "robot_id_goal", 1, &Router_Node::labelledGoalCallback, this );
 
     if ( single_robot_mode_) {
         // Single Robot Mode
@@ -166,6 +167,43 @@ void Router_Node::goalCallback ( const geometry_msgs::PoseStamped &msg ) {
     goals.destinations.resize(1);
     goals.destinations[0] = msg.pose;
     goalsCallback ( goalsArray );
+}
+
+
+void Router_Node::labelledGoalCallback ( const tuw_multi_robot_msgs::RobotGoals &_goal ) {
+
+    // Check if the robot associated with goal is subscribed to the router
+    bool isRobotSubscribed=false;
+    for(auto it=subscribed_robots_.begin();it!=subscribed_robots_.end();it++) {
+      if(!_goal.robot_name.compare((*it)->robot_name)) {
+        isRobotSubscribed=true;
+        break;
+      }
+    }
+
+    // If the robot is subscribed
+    if(isRobotSubscribed) {
+      // Add robot to the planned goals
+      goals_msg_.robots.push_back(_goal);
+      // Plan the route
+      plan();
+      
+    } else {
+      ROS_INFO("Multi Robot Router: the robot associated with the goal has not subscribed to the router");
+    }
+
+    
+}
+
+
+void Router_Node::goalsCallback ( const tuw_multi_robot_msgs::RobotGoalsArray &_goals ) {
+
+    ROS_INFO ( "%s: Number of active robots %lu", n_param_.getNamespace().c_str(), active_robots_.size() );
+    // Update goals
+    goals_msg_ = _goals;
+     // Plan the route
+    plan();
+ 
 }
 
 
@@ -366,33 +404,6 @@ void Router_Node::graphCallback ( const tuw_multi_robot_msgs::Graph &msg ) {
 } */
 
 
-void Router_Node::goalIdCallback ( const tuw_multi_robot_msgs::RobotGoals &_goal ) {
-
-    // Check if the robot associated with goal is subscribed to the router
-    bool isRobotSubscribed=false;
-    for(auto it=subscribed_robots_.begin();it!=subscribed_robots_.end();it++) {
-      if(!_goal.robot_name.compare((*it)->robot_name)) {
-        isRobotSubscribed=true;
-        break;
-      }
-    }
-
-    // If the robot is subscribed
-    if(isRobotSubscribed) {
-      // Add robot to the planned goals
-      goals_msg_.robots.push_back(_goal);
-
-      planner_prepared_ = false;
-      planner_prepared_ = preparePlanning ( radius_, starts_, goals_, goals_msg_, robot_names_ );
-
-      plan();
-      
-    } else {
-      ROS_INFO("Multi Robot Router: the robot associated with the goal has not subscribed to the router");
-    }
-
-    
-}
 
 
 bool Router_Node::preparePlanning ( std::vector<float> &_radius, std::vector<Eigen::Vector3d> &_starts, std::vector<Eigen::Vector3d> &_goals, const tuw_multi_robot_msgs::RobotGoalsArray &goal_msg, std::vector<std::string> &robot_names ) {
@@ -455,18 +466,12 @@ bool Router_Node::preparePlanning ( std::vector<float> &_radius, std::vector<Eig
 }
 
 
-void Router_Node::goalsCallback ( const tuw_multi_robot_msgs::RobotGoalsArray &_goals ) {
-
-    planner_prepared_=false;   
-    planner_prepared_ = preparePlanning ( radius_, starts_, goals_, _goals, robot_names_ );
-    ROS_INFO ( "%s: Number of active robots %lu", n_param_.getNamespace().c_str(), active_robots_.size() );
-
-    plan();
- 
-}
 
 
 void Router_Node::plan() {
+
+    planner_prepared_ = false;
+    planner_prepared_ = preparePlanning ( radius_, starts_, goals_, goals_msg_, robot_names_ );
 
     if ( planner_prepared_ && got_map_ && got_graph_ ) {
         attempts_total_++;

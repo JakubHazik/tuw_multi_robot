@@ -58,10 +58,12 @@ public:
      * @param n the nodehandle to register publishers and subscribers
      */
     Router_Node ( ros::NodeHandle &n );
+
     /**
      * @brief publishes an empty RoutingTable
      */
     void publishEmpty();
+
     /**
      * @brief publishes a RoutingTable
      */
@@ -72,6 +74,7 @@ public:
      * Check status of every robots and decide if execution is finished or not
      */
     void monitorExecution();
+
     /**
      * @brief used to update the nodes timeout to latch topics
      * @param secs the seconds passed since the last update
@@ -99,7 +102,7 @@ private:
     // Callback to get goal (single robot mode)
     void goalCallback ( const geometry_msgs::PoseStamped &_goal );
     // Callback to get a labelised goal (a goal for a single robot but in a multi-robot mode)
-    void goalIdCallback ( const tuw_multi_robot_msgs::RobotGoals &_goal ); // R.Desarzens
+    void labelledGoalCallback ( const tuw_multi_robot_msgs::RobotGoals &_goal ); // R.Desarzens
     // Compute hash of a map
     size_t getHash ( const std::vector<signed char> &_map, const Eigen::Vector2d &_origin, const float &_resolution );
     // Compute hash of a graph
@@ -113,8 +116,9 @@ private:
     void unsubscribeTopic ( std::string _robot_name );
     // Helper function to compute the yaw
     float getYaw ( const geometry_msgs::Quaternion &_rot );
+    // Extract radius from shape variable
     float calcRadius ( const int shape, const std::vector<float> &shape_variables ) const;
-
+    // Prepare data to be used by the multi-robot router
     bool preparePlanning ( std::vector<float> &_radius, std::vector<Eigen::Vector3d> &_starts, std::vector<Eigen::Vector3d> &_goals, const tuw_multi_robot_msgs::RobotGoalsArray &_ros_goals, std::vector<std::string> &robot_names );
     // bool addSingleRobot ( std::vector<float> &_radius, std::vector<Eigen::Vector3d> &_starts, std::vector<Eigen::Vector3d> &_goals, const tuw_multi_robot_msgs::RobotGoals &goal_msg, std::vector<std::string> &robot_names );
  
