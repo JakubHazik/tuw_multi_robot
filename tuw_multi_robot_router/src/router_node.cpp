@@ -113,26 +113,33 @@ Router_Node::Router_Node ( ros::NodeHandle &_n ) : Router(),
     ROS_INFO("Register robot service advertised");
 }
 
-bool Router_Node::registerNewRobotCB(tuw_multi_robot_msgs::RegisterRobot::Request& req,
-                                     tuw_multi_robot_msgs::RegisterRobot::Response& res)
+bool ssh_authentication(std::string ssh_server)
 {
-    std::lock_guard<std::mutex> lock(reg_mutex_);
-    if (num_of_robots_ > max_robots_ - 1)
-    {
-        ROS_ERROR(
-            "Cannot register new robot. Maximum number of robots that can be registered is %d", max_robots_);
-        res.ack = false;
-        return true;
-    }
-
-    // Authentification - authorized_keys have to be up to date
-
+    // -------------------------------------------------------------------------
+    // SSH authentification - authorized_keys have to be up to date
+    // -------------------------------------------------------------------------
+    int rc;
     ssh_session session = ssh_new();
     if (session == NULL)
+    {
+        ROS_ERROR(
+            "Cannot create ssh sesssion");
         return false;
+    }
 
-    int rc;
+    // get router url/ip from a service
+    // router_hn = "tank.mesh.tpg.argentan.ifollow";
+    ssh_options_set(session, SSH_OPTIONS_HOST, ssh_server.c_str());
+
+    rc = ssh_connect(session);
+    if (rc != SSH_OK)
+    {
+        ROS_ERROR("Error connecting.");
+        return false;
+    }
+
     rc = ssh_userauth_publickey_auto(session, NULL, NULL);
+
     switch(rc)
     {
         case SSH_AUTH_ERROR:
@@ -145,19 +152,43 @@ bool Router_Node::registerNewRobotCB(tuw_multi_robot_msgs::RegisterRobot::Reques
             ROS_INFO("You've been partially authenticated, you still have to use another method");
             break;
         case SSH_AUTH_SUCCESS:
-            ROS_INFO("The public key is accepted, you want now to use ssh_userauth_publickey()");
+            ROS_INFO("The public key is accepted!");
             break;
         case SSH_AUTH_AGAIN:
             ROS_INFO("In nonblocking mode, you've got to call this again later");
     }
-    if (rc == SSH_AUTH_ERROR)
+    if (rc != SSH_AUTH_SUCCESS)
     {
         ROS_ERROR(
             "Cannot register the robot. Router authentication failed. %s", ssh_get_error(session));
+        // Kill the node with error message
+        // exit();
+        // return false;
         return false;
     }
     // auth ok, close the session and proceed
+    ssh_disconnect(session);
     ssh_free(session);
+    // -------------------------------------------------------------------------
+    return true;
+}
+
+bool Router_Node::registerNewRobotCB(tuw_multi_robot_msgs::RegisterRobot::Request& req,
+                                     tuw_multi_robot_msgs::RegisterRobot::Response& res)
+{
+    std::lock_guard<std::mutex> lock(reg_mutex_);
+    if (num_of_robots_ > max_robots_ - 1)
+    {
+        ROS_ERROR(
+            "Cannot register new robot. Maximum number of robots that can be registered is %d", max_robots_);
+        // res.ack = false;
+        return false;
+    }
+
+    std::string robot_id = req.id;
+    std::replace(robot_id.begin(), robot_id.end(), '_', '-');
+
+    if (!ssh_authentication(robot_id)) return false;
 
     // std::ostringstream ss;
     // ss << std::setw(5) << std::setfill('0') << 12 << "\n";
@@ -181,7 +212,10 @@ bool Router_Node::registerNewRobotCB(tuw_multi_robot_msgs::RegisterRobot::Reques
 
     // locCB_last_call_[res.id] = ros::Time::now();
 
-    res.ack = true;
+    char hostname[HOST_NAME_MAX];
+    gethostname(hostname, HOST_NAME_MAX);
+    res.id = std::string(hostname);
+
     return true;
 }
 
