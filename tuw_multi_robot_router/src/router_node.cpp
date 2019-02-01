@@ -172,6 +172,8 @@ void Router_Node::goalCallback ( const geometry_msgs::PoseStamped &msg ) {
 
 void Router_Node::labelledGoalCallback ( const tuw_multi_robot_msgs::RobotGoals &_goal ) {
 
+    ROS_DEBUG("Labbelled goal received");
+
     // Check if the robot associated with goal is subscribed to the router
     bool is_robot_subscribed=false;
     for(auto it=subscribed_robots_.begin();it!=subscribed_robots_.end();it++) {
@@ -184,14 +186,15 @@ void Router_Node::labelledGoalCallback ( const tuw_multi_robot_msgs::RobotGoals 
     // If the robot is subscribed
     if(is_robot_subscribed) {
       // If goal already exists for the robot, replace it
-      bool found_goal=false; 
-      for( auto goal : goals_msg_.robots ) {
-        if(!goal.robot_name.compare(_goal.robot_name)) {
-          goal=_goal;
+      bool found_goal=false;
+      for(uint32_t i=0; i<goals_msg_.robots.size(); i++) {
+        if(!goals_msg_.robots.at(i).robot_name.compare(_goal.robot_name)) {
+          goals_msg_.robots.at(i)=_goal;
           found_goal=true;
           ROS_DEBUG("multi robot router : Found new goal for robot");
           break;
         }
+          
       }
 
       // If no existing goal for this robot, then add it
@@ -204,15 +207,15 @@ void Router_Node::labelledGoalCallback ( const tuw_multi_robot_msgs::RobotGoals 
       plan();
       
     } else {
-      ROS_INFO("Multi Robot Router: the robot associated with the goal has not subscribed to the router");
+      ROS_ERROR("Multi Robot Router: the robot associated with the goal has not subscribed to the router");
     }
-
     
 }
 
 
 void Router_Node::goalsCallback ( const tuw_multi_robot_msgs::RobotGoalsArray &_goals ) {
 
+    ROS_DEBUG("Group of goals received");
     ROS_INFO ( "%s: Number of active robots %lu", n_param_.getNamespace().c_str(), active_robots_.size() );
     // Update goals
     goals_msg_ = _goals;
@@ -360,63 +363,6 @@ void Router_Node::graphCallback ( const tuw_multi_robot_msgs::Graph &msg ) {
     }
     got_graph_ = true;
 }
-
-
-/*bool Router_Node::addSingleRobot ( std::vector<float> &_radius, std::vector<Eigen::Vector3d> &_starts, std::vector<Eigen::Vector3d> &_goals, const tuw_multi_robot_msgs::RobotGoals &goal_msg,std::vector<std::string> &_robot_names ) {
-
-    bool retval = true;
-    int single_robot_index=-1;
-    // Find the corresponding robot index in the robot names
-    for ( int k = 0; k < _robot_names.size(); k++ ) {
-      if(!_robot_names[k].compare(goal_msg.robot_name) ) {
-        single_robot_index=k;
-      }
-    }
-  
-    // If the robot was already part of the planning, just change its goal and update starting positions 
-    if( single_robot_index != -1 ) { 
-      // Change the corresponding goal
-      geometry_msgs::Pose p = goal_msg.destinations[0];
-      _goals.at(single_robot_index) = ( Eigen::Vector3d ( p.position.x, p.position.y, getYaw ( p.orientation ) ) );
-
-      // Update all the starting positions
-      _starts.clear();
-      for ( int k = 0; k < _robot_names.size(); k++ ) {
-        RobotInfoPtrIterator active_robot = RobotInfo::findObj ( subscribed_robots_, _robot_names[k] );
-        if(active_robot!=subscribed_robots_.end())
-           _starts.push_back ( ( *active_robot )->getPose() );
-        else
-          ROS_INFO("Robot was not found");
-      }
-
-    } else {
-
-      // If robot was not part of the planning, then add it
-      RobotInfoPtrIterator active_robot = RobotInfo::findObj ( subscribed_robots_, 
-                                                               goal_msg.robot_name );
-      active_robots_.push_back( *active_robot );
-      // Add radius 
-      _radius.push_back( ( *active_robot )->radius() );
-      // Change name 
-      _robot_names.push_back(goal_msg.robot_name);
-      // Add the corresponding goal
-      geometry_msgs::Pose p = goal_msg.destinations[0];
-      _goals.push_back( ( Eigen::Vector3d ( p.position.x, p.position.y, getYaw ( p.orientation ) ) ) );
-      // Update all the starting positions
-      _starts.clear();
-      for ( int k = 0; k < _robot_names.size(); k++ ) {
-        RobotInfoPtrIterator active_robot = RobotInfo::findObj ( subscribed_robots_, _robot_names[k] );
-        if(active_robot!=subscribed_robots_.end())
-          _starts.push_back ( ( *active_robot )->getPose() );
-        else
-          ROS_INFO("Robot was not found");
-      }
-   
-    }
-
-    return retval;
-     
-} */
 
 
 void Router_Node::plan() {
