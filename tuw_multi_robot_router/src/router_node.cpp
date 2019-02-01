@@ -200,7 +200,6 @@ void Router_Node::labelledGoalCallback ( const tuw_multi_robot_msgs::RobotGoals 
         ROS_DEBUG("multi robot router : no goal found for this robot, adding to the planner");
       }
 
-
       // Plan the route
       plan();
       
@@ -428,6 +427,7 @@ void Router_Node::plan() {
     planner_prepared_ = preparePlanning ( radius_, starts_, goals_, goals_msg_, robot_names_ );
 
     if ( planner_prepared_ && got_map_ && got_graph_ ) {
+        ROS_DEBUG("Multi-robot router : planning preparation successful");
         attempts_total_++;
         // Try to find a plan
         auto t1 = std::chrono::high_resolution_clock::now();
