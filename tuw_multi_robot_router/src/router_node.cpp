@@ -173,28 +173,32 @@ void Router_Node::goalCallback ( const geometry_msgs::PoseStamped &msg ) {
 void Router_Node::labelledGoalCallback ( const tuw_multi_robot_msgs::RobotGoals &_goal ) {
 
     // Check if the robot associated with goal is subscribed to the router
-    bool isRobotSubscribed=false;
+    bool is_robot_subscribed=false;
     for(auto it=subscribed_robots_.begin();it!=subscribed_robots_.end();it++) {
       if(!_goal.robot_name.compare((*it)->robot_name)) {
-        isRobotSubscribed=true;
+        is_robot_subscribed=true;
         break;
       }
     }
 
     // If the robot is subscribed
-    if(isRobotSubscribed) {
+    if(is_robot_subscribed) {
       // If goal already exists for the robot, replace it
       bool found_goal=false; 
       for( auto goal : goals_msg_.robots ) {
         if(!goal.robot_name.compare(_goal.robot_name)) {
           goal=_goal;
           found_goal=true;
+          ROS_DEBUG("multi robot router : Found new goal for robot");
           break;
         }
       }
+
       // If no existing goal for this robot, then add it
-      if(!found_goal)
+      if(!found_goal) {
         goals_msg_.robots.push_back(_goal);
+        ROS_DEBUG("multi robot router : no goal found for this robot, adding to the planner");
+      }
 
       // Plan the route
       plan();
@@ -714,8 +718,6 @@ std::size_t Router_Node::getHash ( const std::vector<Segment> &_graph ) {
 
     return seed;
 }
-
-
 
 
 } // namespace multi_robot_router
