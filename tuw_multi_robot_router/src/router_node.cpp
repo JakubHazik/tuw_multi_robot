@@ -51,7 +51,7 @@ int main ( int argc, char **argv ) {
         ros::spinOnce();
         node.monitorExecution();
         node.updateTimeout ( r.expectedCycleTime().toSec() );
-        // node.plan();
+        node.plan();
    }
 
     return 0;
@@ -172,7 +172,7 @@ void Router_Node::goalCallback ( const geometry_msgs::PoseStamped &msg ) {
 
 void Router_Node::labelledGoalCallback ( const tuw_multi_robot_msgs::RobotGoals &_goal ) {
 
-    ROS_DEBUG("Labbelled goal received");
+    ROS_DEBUG("Labelled goal received");
 
     // Check if the robot associated with goal is subscribed to the router
     bool is_robot_subscribed=false;
