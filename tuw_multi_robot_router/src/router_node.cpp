@@ -78,7 +78,7 @@ Router_Node::Router_Node ( ros::NodeHandle &_n ) : Router(),
     subMap_ = n_.subscribe ( "map", 1, &Router_Node::mapCallback, this );
     subVoronoiGraph_ = n_.subscribe ( "segments", 1, &Router_Node::graphCallback, this );
     subRobotInfo_ = n_.subscribe ( "robot_info" , 10000, &Router_Node::robotInfoCallback, this );
-    subSingleRobotIdGoal_ = n_.subscribe ( "robot_id_goal", 1, &Router_Node::labelledGoalCallback, this );
+    subSingleRobotIdGoal_ = n_.subscribe ( "labelled_goal", 1, &Router_Node::labelledGoalCallback, this );
 
     if ( single_robot_mode_) {
         // Single Robot Mode
@@ -199,6 +199,7 @@ void Router_Node::labelledGoalCallback ( const tuw_multi_robot_msgs::RobotGoals 
         goals_msg_.robots.push_back(_goal);
         ROS_DEBUG("multi robot router : no goal found for this robot, adding to the planner");
       }
+
 
       // Plan the route
       plan();
@@ -420,6 +421,8 @@ void Router_Node::graphCallback ( const tuw_multi_robot_msgs::Graph &msg ) {
 
 
 void Router_Node::plan() {
+
+    ROS_DEBUG("Start planning");
 
     planner_prepared_ = false;
     planner_prepared_ = preparePlanning ( radius_, starts_, goals_, goals_msg_, robot_names_ );
