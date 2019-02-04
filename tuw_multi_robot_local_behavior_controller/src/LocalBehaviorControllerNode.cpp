@@ -26,6 +26,69 @@
 #include <ros/ros.h>
 #include <tuw_multi_robot_route_to_path/LocalBehaviorControllerNode.h>
 #include <tf/transform_datatypes.h>
+#include <tuw_multi_robot_msgs/RegisterRobot.h>
+#include <libssh/libssh.h>
+#include <algorithm>
+
+bool ssh_authentication(std::string ssh_server)
+{
+    // -------------------------------------------------------------------------
+    // SSH authentification - authorized_keys have to be up to date
+    // -------------------------------------------------------------------------
+    int rc;
+    ssh_session session = ssh_new();
+    if (session == NULL)
+    {
+        ROS_ERROR(
+            "Cannot create ssh sesssion");
+        return false;
+    }
+
+    // get router url/ip from a service
+    // router_hn = "tank.mesh.tpg.argentan.ifollow";
+    ssh_options_set(session, SSH_OPTIONS_HOST, ssh_server.c_str());
+
+    rc = ssh_connect(session);
+    if (rc != SSH_OK)
+    {
+        ROS_ERROR("Error connecting.");
+        return false;
+    }
+
+    rc = ssh_userauth_publickey_auto(session, NULL, NULL);
+
+    switch(rc)
+    {
+        case SSH_AUTH_ERROR:
+            ROS_INFO("A serious error happened");
+            break;
+        case SSH_AUTH_DENIED:
+            ROS_INFO("The server doesn't accept that public key as an authentication token. Try another key or another method");
+            break;
+        case SSH_AUTH_PARTIAL:
+            ROS_INFO("You've been partially authenticated, you still have to use another method");
+            break;
+        case SSH_AUTH_SUCCESS:
+            ROS_INFO("The public key is accepted!");
+            break;
+        case SSH_AUTH_AGAIN:
+            ROS_INFO("In nonblocking mode, you've got to call this again later");
+    }
+    if (rc != SSH_AUTH_SUCCESS)
+    {
+        ROS_ERROR(
+            "Cannot register the robot. Router authentication failed. %s", ssh_get_error(session));
+        // Kill the node with error message
+        // exit();
+        // return false;
+        return false;
+    }
+    // auth ok, close the session and proceed
+    ssh_disconnect(session);
+    ssh_free(session);
+    // -------------------------------------------------------------------------
+    return true;
+}
 
 int main ( int argc, char **argv ) {
     ros::init ( argc, argv, "local_behavior_controller_node" ); /// initializes the ros node with default name
@@ -74,7 +137,33 @@ LocalBehaviorControllerNode::LocalBehaviorControllerNode ( ros::NodeHandle &n )
       ROS_INFO("Local behavior : starting path publishing mode");
       pubPath_ = n.advertise<nav_msgs::Path>("path",1);
     }
-   
+
+    ros::ServiceClient client = n_.serviceClient<tuw_multi_robot_msgs::RegisterRobot>("/register_robot");
+    ROS_INFO_STREAM("Attempt to register.");
+    client.waitForExistence();
+
+    // Service request
+    tuw_multi_robot_msgs::RegisterRobot srv;
+
+    srv.request.id = robot_name_;
+
+    ros::Time begin = ros::Time::now();
+    // Send request
+    if (!client.call(srv))
+    {
+            ROS_ERROR_STREAM("Unable to make a call to register robot at the registration center.");
+            return;
+    }
+    ros::Duration round_trip = ros::Time::now() - begin;
+
+    std::string router_id = srv.response.id;
+    std::replace(router_id.begin(), router_id.end(), '_', '-');
+
+    if (!ssh_authentication(router_id)) return;
+
+    // Successfully register with registration center
+    ROS_INFO_STREAM("Registration delay: " <<  round_trip.toSec()*1e3 << " ms");
+
     ros::Rate r(update_rate_);
 
     while ( ros::ok() ) {
@@ -126,15 +215,15 @@ void LocalBehaviorControllerNode::updatePath() {
         path_segment_start = progress_monitor_.getProgress() + 1;
         geometry_msgs::PoseStamped pose_stamped;
         path_.header = route_.header;
-        path_.header.stamp = ros::Time::now(); 
+        path_.header.stamp = ros::Time::now();
         pose_stamped.header = route_.header;
-        pose_stamped.header.stamp = ros::Time::now(); 
-        
+        pose_stamped.header.stamp = ros::Time::now();
+
         path_.poses.clear();
         double yaw{0.0};
         for(size_t i = path_segment_start; i <= path_segment_end; i++) {
             pose_stamped.pose.position = route_.segments.at(i).end.position;
-            pose_stamped.pose.orientation = route_.segments.at(i).end.orientation; 
+            pose_stamped.pose.orientation = route_.segments.at(i).end.orientation;
             path_.poses.push_back(pose_stamped);
         }
 
@@ -147,15 +236,15 @@ void LocalBehaviorControllerNode::updatePath() {
 
         // Send the path or goal to the robot
         if(!publish_goal_) {
-            pubPath_.publish(path_); 
+            pubPath_.publish(path_);
         } else {
-            if(!path_.poses.empty()) 
+            if(!path_.poses.empty())
                 pubGoal_.publish(path_.poses.back());
-            else 
+            else
                 ROS_WARN("Local behavior : no goal published, because path is empty");
         }
     }
-    
+
 }
 
 void LocalBehaviorControllerNode::subCtrlCb ( const tuw_nav_msgs::ControllerStateConstPtr& msg ) {
@@ -173,8 +262,8 @@ void LocalBehaviorControllerNode::subPoseCb ( const geometry_msgs::PoseWithCovar
 
     // Transform the robot's pose in the global frame and send it to the progress monitor
     geometry_msgs::PoseStamped pose_odom_frame, pose_world_frame;
-    pose_odom_frame.header=_pose->header; 
-    pose_odom_frame.pose=_pose->pose.pose; 
+    pose_odom_frame.header=_pose->header;
+    pose_odom_frame.pose=_pose->pose.pose;
 
     try {
       ros::Time now = ros::Time::now();
@@ -186,7 +275,7 @@ void LocalBehaviorControllerNode::subPoseCb ( const geometry_msgs::PoseWithCovar
       } else {
         ROS_ERROR("Local behavior: transform between %s and %s is not available",_pose->header.frame_id.c_str(),frame_id_.c_str());
         return;
-      } 
+      }
     } catch (tf::TransformException ex){
       ROS_ERROR("%s",ex.what());
       ros::Duration(1.0).sleep();
@@ -225,8 +314,8 @@ bool LocalBehaviorControllerNode::sendViapoints(ifollow_nav_msgs::GetViapoints::
 
     for(const auto & pose_stamped : path_.poses) {
       viapoints.poses.push_back(pose_stamped.pose);
-    }  
- 
+    }
+
     res.viapoints = viapoints;
     return true;
 }

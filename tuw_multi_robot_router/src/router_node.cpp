@@ -34,6 +34,8 @@
 #include <boost/functional/hash.hpp>
 #include <boost/regex.hpp>
 #include <tf/tf.h>
+#include <unordered_map>
+#include <libssh/libssh.h>
 
 //TODO add Weights from robots...
 
@@ -96,6 +98,120 @@ Router_Node::Router_Node ( ros::NodeHandle &_n ) : Router(),
     // Dynamic reconfigure
     call_type = boost::bind ( &Router_Node::parametersCallback, this, _1, _2 );
     param_server.setCallback ( call_type );
+
+    // Registration/unregistration services - J. Mendes
+    n_param_.param<int>("max_robots", max_robots_, 100);
+    n_param_.param<double>("noinfo_timeout", noinfo_timeout_, 15.);
+    num_of_robots_ = 0;
+    register_service_ = n_.advertiseService("register_robot", &Router_Node::registerNewRobotCB, this);
+    // unregister_service_ = nh.advertiseService("unregister_robot", &Router_Node::unregisterRobotCB, this);
+    ROS_INFO("Register robot service advertised");
+}
+
+bool ssh_authentication(std::string ssh_server)
+{
+    // -------------------------------------------------------------------------
+    // SSH authentification - authorized_keys have to be up to date
+    // -------------------------------------------------------------------------
+    int rc;
+    ssh_session session = ssh_new();
+    if (session == NULL)
+    {
+        ROS_ERROR(
+            "Cannot create ssh sesssion");
+        return false;
+    }
+
+    // get router url/ip from a service
+    // router_hn = "tank.mesh.tpg.argentan.ifollow";
+    ssh_options_set(session, SSH_OPTIONS_HOST, ssh_server.c_str());
+
+    rc = ssh_connect(session);
+    if (rc != SSH_OK)
+    {
+        ROS_ERROR("Error connecting.");
+        return false;
+    }
+
+    rc = ssh_userauth_publickey_auto(session, NULL, NULL);
+
+    switch(rc)
+    {
+        case SSH_AUTH_ERROR:
+            ROS_INFO("A serious error happened");
+            break;
+        case SSH_AUTH_DENIED:
+            ROS_INFO("The server doesn't accept that public key as an authentication token. Try another key or another method");
+            break;
+        case SSH_AUTH_PARTIAL:
+            ROS_INFO("You've been partially authenticated, you still have to use another method");
+            break;
+        case SSH_AUTH_SUCCESS:
+            ROS_INFO("The public key is accepted!");
+            break;
+        case SSH_AUTH_AGAIN:
+            ROS_INFO("In nonblocking mode, you've got to call this again later");
+    }
+    if (rc != SSH_AUTH_SUCCESS)
+    {
+        ROS_ERROR(
+            "Cannot register the robot. Router authentication failed. %s", ssh_get_error(session));
+        // Kill the node with error message
+        // exit();
+        // return false;
+        return false;
+    }
+    // auth ok, close the session and proceed
+    ssh_disconnect(session);
+    ssh_free(session);
+    // -------------------------------------------------------------------------
+    return true;
+}
+
+bool Router_Node::registerNewRobotCB(tuw_multi_robot_msgs::RegisterRobot::Request& req,
+                                     tuw_multi_robot_msgs::RegisterRobot::Response& res)
+{
+    std::lock_guard<std::mutex> lock(reg_mutex_);
+    if (num_of_robots_ > max_robots_ - 1)
+    {
+        ROS_ERROR(
+            "Cannot register new robot. Maximum number of robots that can be registered is %d", max_robots_);
+        // res.ack = false;
+        return false;
+    }
+
+    std::string robot_id = req.id;
+    std::replace(robot_id.begin(), robot_id.end(), '_', '-');
+
+    if (!ssh_authentication(robot_id)) return false;
+
+    // std::ostringstream ss;
+    // ss << std::setw(5) << std::setfill('0') << 12 << "\n";
+    // std::string s2(ss.str());
+
+    // res.id = "robot_" + std::to_string(num_of_robots_);
+    // res.id = req.ros_namespace.substr(1, req.ros_namespace.length());         // FIXME
+
+    // PublisherMap::iterator robot_it = robots_.find(res.id);
+    // if (robot_it == robots_.end())
+    // {
+    // pubs_[res.id] = std::make_shared<ros::Publisher>(nh_.advertise<mrs_lp_msgs::CommList>(req.ros_namespace + "/comm_list", 1));
+    // }
+
+    ROS_INFO_STREAM("Registered new robot: " << req.id);
+    // ROS_INFO_STREAM("Registered new robot: Robot_" << res.id << " at host " << req.robot_hostname);
+    num_of_robots_++;
+    ids_.push_back(req.id);
+
+    // loc_subs_[res.id] = std::make_shared<ros::Subscriber>(nh_.subscribe("/" + res.id + "/localization", 1, &ResgistrationCenter::locCB_, this));
+
+    // locCB_last_call_[res.id] = ros::Time::now();
+
+    char hostname[HOST_NAME_MAX];
+    gethostname(hostname, HOST_NAME_MAX);
+    res.id = std::string(hostname);
+
+    return true;
 }
 
 
@@ -152,16 +268,16 @@ void Router_Node::updateTimeout ( const float _secs ) {
 
 
 void Router_Node::goalCallback ( const geometry_msgs::PoseStamped &msg ) {
-    
+
     if ( subscribed_robots_.size() != 1 ) {
         ROS_WARN ( "No robot subscribed, a tuw_multi_robot_msgs::RobotInfo should be published in order to know where the robot is located");
         ROS_WARN ( "Use a local behavior controller to publish regual a RobotInfo msg");
         return;
     }
- 
+    
     tuw_multi_robot_msgs::RobotGoalsArray goalsArray;
     goalsArray.header = msg.header;
-    goalsArray.robots.resize(1);    
+    goalsArray.robots.resize(1);
     tuw_multi_robot_msgs::RobotGoals &goals = goalsArray.robots[0];
     goals.robot_name = subscribed_robots_[0]->robot_name;
     goals.destinations.resize(1);
@@ -209,7 +325,7 @@ void Router_Node::labelledGoalCallback ( const tuw_multi_robot_msgs::RobotGoals 
     } else {
       ROS_ERROR("Multi Robot Router: the robot associated with the goal has not subscribed to the router");
     }
-    
+
 }
 
 
@@ -413,6 +529,7 @@ void Router_Node::plan() {
     } else {
         publishEmpty();
     }
+
 }
 
 
@@ -427,7 +544,7 @@ bool Router_Node::preparePlanning ( std::vector<float> &_radius, std::vector<Eig
     std::vector<std::string> active_robots_name;
     for ( int k = 0; k < goal_msg.robots.size(); k++ ) {
       active_robots_name.push_back(goal_msg.robots[k].robot_name);
-    } 
+    }
 
     for ( int k = 0; k < subscribed_robots_.size(); k++ ) {
         RobotInfoPtrIterator active_robot = RobotInfo::findObj ( subscribed_robots_, subscribed_robots_[k]->robot_name );
@@ -435,7 +552,7 @@ bool Router_Node::preparePlanning ( std::vector<float> &_radius, std::vector<Eig
         // For each robot, if there is a new goal for it, then use it
         for(auto it=goal_msg.robots.begin();it!=goal_msg.robots.end();it++) {
           if(!subscribed_robots_[k]->robot_name.compare(it->robot_name) ) {
-            active_goal=it; 
+            active_goal=it;
           }
         }
 
@@ -463,7 +580,7 @@ bool Router_Node::preparePlanning ( std::vector<float> &_radius, std::vector<Eig
             continue;
 
         }
-    
+
     }
 
 
@@ -670,5 +787,3 @@ std::size_t Router_Node::getHash ( const std::vector<Segment> &_graph ) {
 
 
 } // namespace multi_robot_router
-
-

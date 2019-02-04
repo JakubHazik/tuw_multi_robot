@@ -17,6 +17,9 @@ find_package(catkin REQUIRED COMPONENTS
   tuw_voronoi_graph
 )
 
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(LIBSSH libssh)
+
 find_package(OpenCV 3 REQUIRED)
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -151,6 +154,7 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ${Eigen3_INCLUDE_DIRS}
+  ${LIBSSH_INCLUDE_DIRS}
   ${dynamic_reconfigure_PACKAGE_PATH}/cmake/cfgbuild.cmake
 )
 
@@ -181,6 +185,7 @@ add_executable(${PROJECT_NAME}_node src/router_node.cpp)
 target_link_libraries(${PROJECT_NAME}_node
   ${catkin_LIBRARIES}
   ${PROJECT_NAME}
+  ${LIBSSH_LIBRARIES}
 )
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries

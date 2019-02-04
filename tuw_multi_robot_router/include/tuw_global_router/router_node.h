@@ -45,7 +45,9 @@
 #include <tuw_global_router/router.h>
 #include <tuw_global_router/mrr_utils.h>
 #include <opencv/cv.hpp>
-
+#include <mutex>
+#include <tuw_multi_robot_msgs/RegisterRobot.h>
+// #include <tuw_multi_robot_msgs/UnregisterRobot.h>
 //TODO disable got_map if not used
 
 namespace multi_robot_router
@@ -68,7 +70,7 @@ public:
      * @brief publishes a RoutingTable
      */
     void publish();
-    
+
     /**
      * @brief Monitors the execution
      * Check status of every robots and decide if execution is finished or not
@@ -120,7 +122,6 @@ private:
     float calcRadius ( const int shape, const std::vector<float> &shape_variables ) const;
     // Prepare data to be used by the multi-robot router
     bool preparePlanning ( std::vector<float> &_radius, std::vector<Eigen::Vector3d> &_starts, std::vector<Eigen::Vector3d> &_goals, const tuw_multi_robot_msgs::RobotGoalsArray &_ros_goals, std::vector<std::string> &robot_names );
-    // bool addSingleRobot ( std::vector<float> &_radius, std::vector<Eigen::Vector3d> &_starts, std::vector<Eigen::Vector3d> &_goals, const tuw_multi_robot_msgs::RobotGoals &goal_msg, std::vector<std::string> &robot_names );
  
     // These members are for logging
     int attempts_total_;
@@ -174,7 +175,16 @@ private:
     size_t current_map_hash_;
     size_t current_graph_hash_;
     int id_;
- 
+
+    // Robot registration - J. Mendes
+    ros::ServiceServer register_service_;
+    bool registerNewRobotCB(tuw_multi_robot_msgs::RegisterRobot::Request& req, tuw_multi_robot_msgs::RegisterRobot::Response& res);
+    int num_of_robots_;
+    int max_robots_;
+    double noinfo_timeout_;
+    std::vector<std::string> ids_;
+    std::mutex reg_mutex_;
+
 };
 } // namespace multi_robot_router
 #endif // Router_Node_H
