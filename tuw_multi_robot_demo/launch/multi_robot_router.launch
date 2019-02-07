@@ -3,7 +3,6 @@
 <launch>
 
 <arg name="room"                                default="$(optenv PARAMETERS_SET showroom)"     />
-<arg name="launch_rviz"                         default="true"      />
 <arg name="launch_map_server"                   default="true"      />
 <arg name="launch_multi_robot_route_planner"    default="true"      />
 <arg name="launch_graph_generator"              default="true"      />
@@ -43,6 +42,6 @@
 
 <node pkg="static_tf_tools" type="static_tf_server" name="static_tf_server">
     <rosparam command="load" file="$(find tuw_multi_robot_demo)/launch/static_tf_params.yaml" />
-  </node>
+</node> 
   
 </launch>

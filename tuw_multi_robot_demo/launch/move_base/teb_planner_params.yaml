@@ -1,6 +1,6 @@
 TebLocalPlannerROS:
  odom_topic: odom
- map_frame: map
+ map_frame: world
  # Trajectory
  teb_autosize: true
  dt_ref: 0.2 # Temporal resolution of the trajectory
@@ -11,7 +11,7 @@ TebLocalPlannerROS:
  min_samples: 10 
  feasibility_check_no_poses: 2
  allow_init_with_backwards_motion: true
- global_plan_viapoint_sep: 0.3
+ global_plan_viapoint_sep: 0.1
  # via_points_ordered: false
  shrink_horizon_backup: true 
  exact_arc_length: true 

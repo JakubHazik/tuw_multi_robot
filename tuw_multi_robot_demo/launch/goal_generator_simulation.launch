@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+
+<launch>
+    <arg name="room" value="showroom" />      
+
+    <node pkg="tuw_multi_robot_test" type="goal_generator" name="goal_generator_robot_1">
+        <param name="file" value="$(find tuw_multi_robot_demo)/cfg/goals/$(arg room)/goal_big_loop_simulation.txt" />
+        <param name="robot_id" value="robot_1" />
+        <param name="odom_frame" value="robot_1/odom" />
+        <param name="world_frame" value="world" />
+        <param name="run_once" value="false" />
+        <param name="use_tf" value="true" />
+    </node> 
+    
+    <node pkg="tuw_multi_robot_test" type="goal_generator" name="goal_generator_robot_0">
+        <param name="file" value="$(find tuw_multi_robot_demo)/cfg/goals/$(arg room)/goal_small_loop_simulation.txt" />
+        <param name="robot_id" value="robot_0" />
+        <param name="odom_frame" value="robot_0/odom" />
+        <param name="world_frame" value="world" />
+        <param name="run_once" value="false" />
+        <param name="use_tf" value="true" />
+    </node>   
+
+</launch>

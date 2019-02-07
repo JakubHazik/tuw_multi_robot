@@ -3,21 +3,22 @@
 <launch>
     <arg name="room" value="showroom" />      
     
-    <node pkg="tuw_multi_robot_test" type="goal_generator" name="goal_generator_ilogistics_6">
+    <node pkg="tuw_multi_robot_test" type="goal_generator" name="goal_generator_ilogistics_7">
         <param name="file" value="$(find tuw_multi_robot_demo)/cfg/goals/$(arg room)/goal_big_loop.txt" />
-        <param name="robot_id" value="ilogistics_2_0006" />
-        <param name="odom_frame" value="ilogistics_2_0006/odom" />
+        <param name="robot_id" value="ilogistics_2_0007" />
+        <param name="odom_frame" value="ilogistics_2_0007/odom" />
         <param name="world_frame" value="world" />
         <param name="run_once" value="false" />
         <param name="use_tf" value="false" />
     </node> 
     
-    <!--  <node pkg="tuw_multi_robot_test" type="goal_generator" name="goal_generator_ilogistics_6">
+    <node pkg="tuw_multi_robot_test" type="goal_generator" name="goal_generator_ilogistics_8">
         <param name="file" value="$(find tuw_multi_robot_demo)/cfg/goals/$(arg room)/goal_big_loop.txt" />
-        <param name="robot_id" value="ilogistics_2_0006" />
-        <param name="odom_frame" value="ilogistics_2_0006/odom" />
-        <param name="world_frame" value="ilogistics_2_0006/map" />
+        <param name="robot_id" value="ilogistics_2_0008" />
+        <param name="odom_frame" value="ilogistics_2_0008/odom" />
+        <param name="world_frame" value="world" />
         <param name="run_once" value="false" />
-    </node> -->  
+        <param name="use_tf" value="false" />
+    </node> 
 
 </launch>

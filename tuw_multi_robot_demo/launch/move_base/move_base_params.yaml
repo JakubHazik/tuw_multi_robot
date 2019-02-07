@@ -3,5 +3,5 @@ recovery_behavior_enabled: false
 max_planning_retries: -1.0
 clearing_rotation_allowed: false
 planner_frequency: 4.0
-base_local_planner: teb_local_planner/TebLocalPlannerROS # drhmp_local_planner/DRHMPPlannerROS
+base_local_planner: teb_local_planner/TebLocalPlannerROS 
 base_global_planner: global_spline_planner/SplinePlanner 
