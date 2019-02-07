@@ -1,18 +1,48 @@
+/*******************************************************************************
+* 2-Clause BSD License
+*
+* Copyright (c) 2019, iFollow Robotics
+* All rights reserved.
+*
+* Redistribution and use in source and binary forms, with or without
+* modification, are permitted provided that the following conditions are met:
+*
+* 1. Redistributions of source code must retain the above copyright notice, this
+*   list of conditions and the following disclaimer.
+*
+* 2. Redistributions in binary form must reproduce the above copyright notice,
+*   this list of conditions and the following disclaimer in the documentation
+*   and/or other materials provided with the distribution.
+*
+* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+* AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+* IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+* DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+* FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+* DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+* SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+* CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+* OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+* OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*
+* Author: José MENDES FILHO
+*******************************************************************************/
+
 #include "tuw_multi_robot_route_to_path/GoalFinder.h"
 #include "tf/transform_listener.h"
 #include "grid_map_ros/GridMapRosConverter.hpp"
 
-// #include <costmap_2d/costmap_2d_ros.h>
-
 namespace goal_finder {
 
 GoalFinder::GoalFinder()
+    : grid_frame_("")
 {
     ros::NodeHandle n("~/");
     tf::TransformListener tf(ros::Duration(10));
 
     cmap_sub_ = n.subscribe("/move_base/local_costmap/costmap", 1, &GoalFinder::costmapCallback, this);
     cmap_update_sub_ = n.subscribe("/move_base/local_costmap/costmap_updates", 1, &GoalFinder::costmapUpdateCallback, this);
+    footprint_sub_ = n.subscribe("/footprint", 1, &GoalFinder::footprintCallback, this);
     // cgoal_sub_ = n.subscribe("/move_base/current_goal", 1, &GoalFinder::currentGoalCallback, this);
 }
 
@@ -25,20 +55,97 @@ GoalFinder::GoalFinder()
 GoalFinder::~GoalFinder(){
 }
 
-void GoalFinder::costmapCallback(const nav_msgs::OccupancyGrid& occupancyGrid)
+bool GoalFinder::isGoalAttainable(const geometry_msgs::PoseStamped& last_goal_sent)
 {
-    ROS_INFO_STREAM("I heard a costmap w:" << occupancyGrid.info.width << ", h: " << occupancyGrid.info.height);
+
+    // Use data from /goal_pose as position
+    // transform to same frame_id as update.header.frame_id
+    geometry_msgs::PoseStamped goal_cmap_frame = last_goal_sent;
+    if (last_goal_sent.header.frame_id != grid_frame_ &&
+        tf_listener_.waitForTransform(last_goal_sent.header.frame_id, grid_frame_, ros::Time(0), ros::Duration(1.0)))
+    {
+        tf_listener_.transformPose(grid_frame_, last_goal_sent, goal_cmap_frame);
+    }
+
+    auto goal_x = goal_cmap_frame.pose.position.x;
+    auto goal_y = goal_cmap_frame.pose.position.y;
+
+    auto goal_cost = grid_map_.atPosition("local_costmap", gm::Position(goal_x, goal_y));
+
+    // if (goal_cost ok)
+    if (true)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+void GoalFinder::findNewGoal(const geometry_msgs::PoseStamped& last_goal_sent, geometry_msgs::PoseStamped& new_goal)
+{
+    geometry_msgs::PoseStamped goal_cmap_frame = last_goal_sent;
+    if (last_goal_sent.header.frame_id != grid_frame_ &&
+        tf_listener_.waitForTransform(last_goal_sent.header.frame_id, grid_frame_, ros::Time(0), ros::Duration(1.0)))
+    {
+        tf_listener_.transformPose(grid_frame_, last_goal_sent, goal_cmap_frame);
+    }
+
+    auto goal_x = goal_cmap_frame.pose.position.x;
+    auto goal_y = goal_cmap_frame.pose.position.y;
+
+    auto goal_cost = grid_map_.atPosition("local_costmap", gm::Position(goal_x, goal_y));
+
+    // if (goal_cost ok)
+    if (true)
+    {
+        new_goal = last_goal_sent;
+    }
+    else
+    {
+        new_goal = last_goal_sent;
+    }
+}
+
+void GoalFinder::footprintCallback(const geometry_msgs::PolygonStamped& footprint)
+{
+    gm::Polygon gm_footprint;
+    gm_footprint.setFrameId(footprint.header.frame_id);
+
+    for (const auto& vertex : footprint.polygon.points)
+    {
+        gm_footprint.addVertex(gm::Position( vertex.x,  vertex.y));
+    }
+    footprint_ = gm_footprint;
+}
+
+void GoalFinder::costmapCallback(const nav_msgs::OccupancyGrid& occupancy_grid)
+{
+    ROS_INFO_STREAM("I heard a costmap, w:" << occupancy_grid.info.width << ", h: " << occupancy_grid.info.height);
 
     // Convert to grid map.
-    GridMapRosConverter::fromOccupancyGrid(occupancyGrid, "local_costmap", gridMap_);
+    gm::GridMapRosConverter::fromOccupancyGrid(occupancy_grid, "local_costmap", grid_map_);
+    grid_frame_ = occupancy_grid.header.frame_id;
 }
 
 void GoalFinder::costmapUpdateCallback(const map_msgs::OccupancyGridUpdate& update)
 {
-    ROS_INFO_STREAM("I heard a costmap update w:" << update.width << ", h: " << update.height);
+    ROS_INFO_STREAM("I heard a costmap update, w:" << update.width << ", h: " << update.height);
 
-    nav_msgs::OccupancyGrid occupancyGrid;
-    GridMapRosConverter::toOccupancyGrid(gridMap_, "local_costmap", -1.0, 100.0, occupancyGrid);
+    if (grid_frame_ == "")
+    {
+        ROS_ERROR("Costmap update received before costmap");
+        throw "Costmap update received before costmap";
+    }
+    else if (update.header.frame_id != grid_frame_)
+    {
+        ROS_ERROR("Costmap update frame_id is different from costmap frame_id");
+        throw "Costmap update frame_id is different from costmap frame_id";
+    }
+
+    nav_msgs::OccupancyGrid occupancy_grid;
+    gm::GridMapRosConverter::toOccupancyGrid(grid_map_, "local_costmap", -1.0, 100.0, occupancy_grid);
 
     unsigned int x0 = update.x;
     unsigned int y0 = update.y;
@@ -46,23 +153,15 @@ void GoalFinder::costmapUpdateCallback(const map_msgs::OccupancyGridUpdate& upda
     unsigned int yn = update.height + y0;
 
     unsigned int i = 0;
-    for (unsigned int y = y0; y < yn; y++)
+    for (auto y = y0; y < yn; y++)
     {
-        for (unsigned int x = x0; x < xn; x++)
+        for (auto x = x0; x < xn; x++)
         {
-            occupancyGrid.data[update.width * y + x] = update.data[i++];
+            occupancy_grid.data[update.width * y + x] = update.data[i++];
         }
     }
-    GridMapRosConverter::fromOccupancyGrid(occupancyGrid, "local_costmap", gridMap_);
-
-    // Use data from /goal_pose as position
-    // transform to same frame_id as update.header.frame_id
-
-    // gridMap_.atPosition("local_costmap", Position(goal.x, goal.y));
-    // This will give the cost at the position (or a value meaning that the point is outside the map)
-    // return if nothing worng
-    // if something is wrong, iterate over gridMap_ and find a new free place
-    // publish new goal pose
+    gm::GridMapRosConverter::fromOccupancyGrid(occupancy_grid, "local_costmap", grid_map_);
+    // grid_frame_ = update.header.frame_id;
 }
 
 }

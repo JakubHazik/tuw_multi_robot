@@ -38,8 +38,10 @@
 #include "grid_map_ros/grid_map_ros.hpp"
 #include "nav_msgs/OccupancyGrid.h"
 #include "map_msgs/OccupancyGridUpdate.h"
+#include <tf/transform_listener.h>
 
-using namespace grid_map;
+// using namespace grid_map;
+namespace gm = grid_map;
 
 namespace goal_finder {
 
@@ -49,16 +51,30 @@ class GoalFinder
 public:
     GoalFinder();
     ~GoalFinder();
+    void findNewGoal(const geometry_msgs::PoseStamped&, geometry_msgs::PoseStamped&);
+    bool isGoalAttainable(const geometry_msgs::PoseStamped&);
 
 private:
+    // Local costmap subscriptions
     ros::Subscriber cmap_sub_;
     ros::Subscriber cmap_update_sub_;
-    ros::Subscriber cgoal_sub_;
-    GridMap gridMap_;
+    ros::Subscriber footprint_sub_;
+
+    // Grid and grid frame
+    std::string grid_frame_;
+    gm::GridMap grid_map_;
+
+    // TF
+    tf::TransformListener tf_listener_;
+
     // geometry_msgs::PoseStamped current_goal_;
+
+    gm::Polygon footprint_;
 
     void costmapCallback(const nav_msgs::OccupancyGrid&);
     void costmapUpdateCallback(const map_msgs::OccupancyGridUpdate&);
+    void footprintCallback(const geometry_msgs::PolygonStamped&);
+
 };
 
 typedef std::shared_ptr<goal_finder::GoalFinder> GoalFinderPtr;

@@ -66,6 +66,7 @@ namespace tuw_multi_robot_route_to_path
       void publishRobotInfo();
     private:
       void updatePath();
+      void verifyGoalFeasibility();
       bool sendViapoints(ifollow_nav_msgs::GetViapoints::Request  &req, ifollow_nav_msgs::GetViapoints::Response &res);
 
       ros::Publisher pubPath_;

@@ -186,7 +186,7 @@ LocalBehaviorControllerNode::LocalBehaviorControllerNode ( ros::NodeHandle &n )
 
         updatePath();
 
-        // verifyGoalFeasibility();
+        verifyGoalFeasibility();
 
         ros::Time now = ros::Time::now();
         ros::Duration robot_info_timer = now - last_ri_pub_time;
@@ -314,42 +314,42 @@ void LocalBehaviorControllerNode::updatePath()
     }
 }
 
-// void verifyGoalFeasibility()
-// {
-//     mbActionClient_->waitForServer();
-//     actionlib::SimpleClientGoalState state = mbActionClient_->getState();
-//     if (state != actionlib::SimpleClientGoalState::SUCCEEDED)
-//     {
-//         // use the local costmap and see if the current goal (last_goal_sent_) is ok
-//         if(!goalFinder_.isGoalAttainable(last_goal_sent_) ||
-//             state == actionlib::SimpleClientGoalState::ABORTED ||
-//             state == actionlib::SimpleClientGoalState::REJECTED)
-//         {
-//             move_base_msgs::MoveBaseGoal newGoal;
-//             goalFinder_.findNewGoal(last_goal_sent_, newGoal);
-//             mbActionClient_->sendGoal(newGoal);
-//             last_goal_sent_ = newGoal.target_pose;
-//         }
-//     }
-//     // done states = RECALLED, REJECTED, PREEMPTED, ABORTED, SUCCEEDED, or LOST
-//     // PENDING         = 0   # The goal has yet to be processed by the action server
-//     // ACTIVE          = 1   # The goal is currently being processed by the action server
-//     // PREEMPTED       = 2   # The goal received a cancel request after it started executing
-//     //                             #   and has since completed its execution (Terminal State)
-//     // SUCCEEDED       = 3   # The goal was achieved successfully by the action server (Terminal State)
-//     // ABORTED         = 4   # The goal was aborted during execution by the action server due
-//     //                             #    to some failure (Terminal State)
-//     // REJECTED        = 5   # The goal was rejected by the action server without being processed,
-//     //                             #    because the goal was unattainable or invalid (Terminal State)
-//     // PREEMPTING      = 6   # The goal received a cancel request after it started executing
-//     //                             #    and has not yet completed execution
-//     // RECALLING       = 7   # The goal received a cancel request before it started executing,
-//     //                             #    but the action server has not yet confirmed that the goal is canceled
-//     // RECALLED        = 8   # The goal received a cancel request before it started executing
-//     //                             #    and was successfully cancelled (Terminal State)
-//     // LOST            = 9   # An action client can determine that a goal is LOST. This should not be
-//     //                             #    sent over the wire by an action server
-// }
+void LocalBehaviorControllerNode::verifyGoalFeasibility()
+{
+    mbActionClient_->waitForServer();
+    actionlib::SimpleClientGoalState state = mbActionClient_->getState();
+    if (state != actionlib::SimpleClientGoalState::SUCCEEDED)
+    {
+        // use the local costmap and see if the current goal (last_goal_sent_) is ok
+        if(!goalFinder_->isGoalAttainable(last_goal_sent_) ||
+            state == actionlib::SimpleClientGoalState::ABORTED ||
+            state == actionlib::SimpleClientGoalState::REJECTED)
+        {
+            move_base_msgs::MoveBaseGoal newGoal;
+            goalFinder_->findNewGoal(last_goal_sent_, newGoal.target_pose);
+            mbActionClient_->sendGoal(newGoal);
+            last_goal_sent_ = newGoal.target_pose;
+        }
+    }
+    // done states = RECALLED, REJECTED, PREEMPTED, ABORTED, SUCCEEDED, or LOST
+    // PENDING         = 0   # The goal has yet to be processed by the action server
+    // ACTIVE          = 1   # The goal is currently being processed by the action server
+    // PREEMPTED       = 2   # The goal received a cancel request after it started executing
+    //                             #   and has since completed its execution (Terminal State)
+    // SUCCEEDED       = 3   # The goal was achieved successfully by the action server (Terminal State)
+    // ABORTED         = 4   # The goal was aborted during execution by the action server due
+    //                             #    to some failure (Terminal State)
+    // REJECTED        = 5   # The goal was rejected by the action server without being processed,
+    //                             #    because the goal was unattainable or invalid (Terminal State)
+    // PREEMPTING      = 6   # The goal received a cancel request after it started executing
+    //                             #    and has not yet completed execution
+    // RECALLING       = 7   # The goal received a cancel request before it started executing,
+    //                             #    but the action server has not yet confirmed that the goal is canceled
+    // RECALLED        = 8   # The goal received a cancel request before it started executing
+    //                             #    and was successfully cancelled (Terminal State)
+    // LOST            = 9   # An action client can determine that a goal is LOST. This should not be
+    //                             #    sent over the wire by an action server
+}
 
 // void LocalBehaviorControllerNode::mbActionActiveCb()
 // {
