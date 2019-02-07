@@ -40,9 +40,11 @@ GoalFinder::GoalFinder()
     ros::NodeHandle n("~/");
     tf::TransformListener tf(ros::Duration(10));
 
+    // TODO
+    // stop using this hardcoded topic names. Get params (or at least do remaps)
     cmap_sub_ = n.subscribe("/move_base/local_costmap/costmap", 1, &GoalFinder::costmapCallback, this);
     cmap_update_sub_ = n.subscribe("/move_base/local_costmap/costmap_updates", 1, &GoalFinder::costmapUpdateCallback, this);
-    footprint_sub_ = n.subscribe("/footprint", 1, &GoalFinder::footprintCallback, this);
+    footprint_sub_ = n.subscribe("/move_base/local_costmap/obstacle_layer_footprint/footprint_stamped", 1, &GoalFinder::footprintCallback, this);
     // cgoal_sub_ = n.subscribe("/move_base/current_goal", 1, &GoalFinder::currentGoalCallback, this);
 }
 
@@ -57,49 +59,77 @@ GoalFinder::~GoalFinder(){
 
 bool GoalFinder::isGoalAttainable(const geometry_msgs::PoseStamped& last_goal_sent)
 {
-
-    // Use data from /goal_pose as position
-    // transform to same frame_id as update.header.frame_id
     geometry_msgs::PoseStamped goal_cmap_frame = last_goal_sent;
     if (last_goal_sent.header.frame_id != grid_frame_ &&
-        tf_listener_.waitForTransform(last_goal_sent.header.frame_id, grid_frame_, ros::Time(0), ros::Duration(1.0)))
+        tf_listener_.waitForTransform(last_goal_sent.header.frame_id,
+                                      grid_frame_,
+                                      ros::Time(0),
+                                      ros::Duration(1.0)))
     {
         tf_listener_.transformPose(grid_frame_, last_goal_sent, goal_cmap_frame);
-    }
-
-    auto goal_x = goal_cmap_frame.pose.position.x;
-    auto goal_y = goal_cmap_frame.pose.position.y;
-
-    auto goal_cost = grid_map_.atPosition("local_costmap", gm::Position(goal_x, goal_y));
-
-    // if (goal_cost ok)
-    if (true)
-    {
-        return true;
     }
     else
     {
-        return false;
+        ROS_ERROR("Goal Finder: transform between %s and %s is not available",
+                  grid_frame_.c_str(), last_goal_sent.header.frame_id.c_str());
+        throw;
     }
+
+    // transform gm::Polygon using goal_cmap_frame
+
+    bool find_new_flag = false;
+    for (gm::PolygonIterator iterator(grid_map_, footprint_);
+         !iterator.isPastEnd(); ++iterator)
+    {
+        if (grid_map_.at("local_costmap", *iterator) == 100)
+        {
+            // PROBLEM
+            // Have to find new goal pose
+            find_new_flag = true;
+            break;
+        }
+    }
+    return find_new_flag;
 }
 
-void GoalFinder::findNewGoal(const geometry_msgs::PoseStamped& last_goal_sent, geometry_msgs::PoseStamped& new_goal)
+void GoalFinder::findNewGoal(const geometry_msgs::PoseStamped& last_goal_sent,
+                             geometry_msgs::PoseStamped& new_goal)
 {
     geometry_msgs::PoseStamped goal_cmap_frame = last_goal_sent;
     if (last_goal_sent.header.frame_id != grid_frame_ &&
-        tf_listener_.waitForTransform(last_goal_sent.header.frame_id, grid_frame_, ros::Time(0), ros::Duration(1.0)))
+        tf_listener_.waitForTransform(last_goal_sent.header.frame_id,
+                                      grid_frame_,
+                                      ros::Time(0),
+                                      ros::Duration(1.0)))
     {
         tf_listener_.transformPose(grid_frame_, last_goal_sent, goal_cmap_frame);
     }
-
-    auto goal_x = goal_cmap_frame.pose.position.x;
-    auto goal_y = goal_cmap_frame.pose.position.y;
-
-    auto goal_cost = grid_map_.atPosition("local_costmap", gm::Position(goal_x, goal_y));
-
-    // if (goal_cost ok)
-    if (true)
+    else
     {
+        ROS_ERROR("Goal Finder: transform between %s and %s is not available",
+                  grid_frame_.c_str(), last_goal_sent.header.frame_id.c_str());
+        throw;
+    }
+
+    // transform gm::Polygon using goal_cmap_frame
+
+    bool find_new_flag = false;
+    for (gm::PolygonIterator iterator(grid_map_, footprint_);
+         !iterator.isPastEnd(); ++iterator)
+    {
+        if (grid_map_.at("local_costmap", *iterator) == 100)
+        {
+            // PROBLEM
+            // Have to find new goal pose
+            find_new_flag = true;
+            break;
+        }
+    }
+
+    if (find_new_flag)
+    {
+        // Use integer programming to find new pose
+        // Use cells in grid for position and finite number of yaws for orientation
         new_goal = last_goal_sent;
     }
     else
