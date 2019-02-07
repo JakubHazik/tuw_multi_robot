@@ -1,34 +1,35 @@
 /* Copyright (c) 2017, TU Wien
-  All rights reserved.
+   All rights reserved.
 
-  Redistribution and use in source and binary forms, with or without
-  modification, are permitted provided that the following conditions are met:
-      * Redistributions of source code must retain the above copyright
+   Redistribution and use in source and binary forms, with or without
+   modification, are permitted provided that the following conditions are met:
+ * Redistributions of source code must retain the above copyright
       notice, this list of conditions and the following disclaimer.
-      * Redistributions in binary form must reproduce the above copyright
+ * Redistributions in binary form must reproduce the above copyright
       notice, this list of conditions and the following disclaimer in the
       documentation and/or other materials provided with the distribution.
-      * Neither the name of the <organization> nor the
+ * Neither the name of the <organization> nor the
       names of its contributors may be used to endorse or promote products
       derived from this software without specific prior written permission.
 
-  THIS SOFTWARE IS PROVIDED BY TU Wien ''AS IS'' AND ANY
-  EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-  DISCLAIMED. IN NO EVENT SHALL TU Wien BE LIABLE FOR ANY
-  DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+   THIS SOFTWARE IS PROVIDED BY TU Wien ''AS IS'' AND ANY
+   EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+   WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+   DISCLAIMED. IN NO EVENT SHALL TU Wien BE LIABLE FOR ANY
+   DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+   (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+   LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+   ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 #include <ros/ros.h>
 #include <tuw_multi_robot_route_to_path/LocalBehaviorControllerNode.h>
 #include <tf/transform_datatypes.h>
 #include <tuw_multi_robot_msgs/RegisterRobot.h>
 #include <libssh/libssh.h>
 #include <algorithm>
+#include <pose_cov_ops/pose_cov_ops.h>
 
 bool ssh_authentication(std::string ssh_server)
 {
@@ -101,7 +102,11 @@ int main ( int argc, char **argv ) {
 
 namespace tuw_multi_robot_route_to_path {
 LocalBehaviorControllerNode::LocalBehaviorControllerNode ( ros::NodeHandle &n )
-    : n_ ( n ), n_param_ ( "~" ) {
+    : n_ ( n )
+    , n_param_ ( "~" )
+    , mbActionClient_(new MoveBaseClient("move_base", true))
+    , goalFinder_(new goal_finder::GoalFinder())
+{
     robot_step_ = -1;
     route_ = tuw_multi_robot_msgs::Route();
     path_segment_end = 0;
@@ -129,13 +134,20 @@ LocalBehaviorControllerNode::LocalBehaviorControllerNode ( ros::NodeHandle &n )
     pubRobotInfo_ = n.advertise<tuw_multi_robot_msgs::RobotInfo> ( "/robot_info", 10000 );
 
     // Either you publish and the goal and the navigation stack retreive the path through a service. Either you send the full path.
-    if(publish_goal_) {
-      ROS_INFO("Local behavior : starting goal publishing mode");
-      pubGoal_ = n.advertise<geometry_msgs::PoseStamped> ( "local_goal", 1 );
-      viapoints_srv_ = n.advertiseService("get_viapoints", &LocalBehaviorControllerNode::sendViapoints, this);
-    } else {
-      ROS_INFO("Local behavior : starting path publishing mode");
-      pubPath_ = n.advertise<nav_msgs::Path>("path",1);
+    if(publish_goal_)
+    {
+        ROS_INFO("Local behavior : starting goal publishing mode");
+
+        // true -> tell the action client that we want to spin a thread by default
+        // mbActionClient_ = MoveBaseClient("move_base", true);
+
+        // pubGoal_ = n.advertise<geometry_msgs::PoseStamped> ( "local_goal", 1 );
+        viapoints_srv_ = n.advertiseService("get_viapoints", &LocalBehaviorControllerNode::sendViapoints, this);
+    }
+    else
+    {
+        ROS_INFO("Local behavior : starting path publishing mode");
+        pubPath_ = n.advertise<nav_msgs::Path>("path",1);
     }
 
     ros::ServiceClient client = n_.serviceClient<tuw_multi_robot_msgs::RegisterRobot>("/register_robot");
@@ -151,8 +163,8 @@ LocalBehaviorControllerNode::LocalBehaviorControllerNode ( ros::NodeHandle &n )
     // Send request
     if (!client.call(srv))
     {
-            ROS_ERROR_STREAM("Unable to make a call to register robot at the registration center.");
-            return;
+        ROS_ERROR_STREAM("Unable to make a call to register robot at the registration center.");
+        return;
     }
     ros::Duration round_trip = ros::Time::now() - begin;
 
@@ -164,33 +176,53 @@ LocalBehaviorControllerNode::LocalBehaviorControllerNode ( ros::NodeHandle &n )
     // Successfully register with registration center
     ROS_INFO_STREAM("Registration delay: " <<  round_trip.toSec()*1e3 << " ms");
 
-    ros::Rate r(update_rate_);
-
-    while ( ros::ok() ) {
-        r.sleep();
+    // ros::Rate r(1000); // TODO
+    ros::Time last_ri_pub_time = ros::Time(0);
+    ros::Duration robot_info_pub_period = ros::Duration(1.0/update_rate_);
+    while ( ros::ok() )
+    {
+        // r.sleep();
         ros::spinOnce();
-        publishRobotInfo();
+
+        updatePath();
+
+        // verifyGoalFeasibility();
+
+        ros::Time now = ros::Time::now();
+        ros::Duration robot_info_timer = now - last_ri_pub_time;
+        if (robot_info_timer >= robot_info_pub_period)
+        {
+            publishRobotInfo();
+            last_ri_pub_time = now;
+        }
     }
 }
 
-void LocalBehaviorControllerNode::updatePath() {
+void LocalBehaviorControllerNode::updatePath()
+{
 
     bool valid = true;
     size_t last_active_segment = 0;
     // Go through all segments in the route
-    for(size_t i = path_segment_start; i < route_.segments.size(); i++) {
+    for(size_t i = path_segment_start; i < route_.segments.size(); i++)
+    {
         const tuw_multi_robot_msgs::RouteSegment &seg = route_.segments.at(i);
         // Go through all preconditions and check if they are fulfilled
-        for(auto&& prec : seg.preconditions) {
+        for(auto&& prec : seg.preconditions)
+        {
             std::string other_robot_name = prec.robot_id;
             auto other_robot = robot_steps_.find(other_robot_name);
-            if(other_robot == robot_steps_.end()) {
+            if(other_robot == robot_steps_.end())
+            {
                 // No robot info received for this robot
                 valid = false;
-            } else {
+            }
+            else
+            {
                 int other_robot_process_requiered = prec.current_route_segment;
                 int other_robot_process_received = robot_steps_[other_robot_name];
-                if(other_robot_process_received < other_robot_process_requiered){
+                if(other_robot_process_received < other_robot_process_requiered)
+                {
                     // Robot is not far enough to process further
                     valid = false;
                 }
@@ -198,14 +230,18 @@ void LocalBehaviorControllerNode::updatePath() {
         }
 
         // Add segments to path as long as the preconditions are fulfilled
-        if(valid) {
+        if(valid)
+        {
             last_active_segment = i;
-        } else {
+        }
+        else
+        {
             break;
         }
     }
 
-    if(last_active_segment > path_segment_end) {
+    if(last_active_segment > path_segment_end)
+    {
         path_segment_end = last_active_segment;
         path_segment_start = progress_monitor_.getProgress() + 1;
         geometry_msgs::PoseStamped pose_stamped;
@@ -215,7 +251,7 @@ void LocalBehaviorControllerNode::updatePath() {
         pose_stamped.header.stamp = ros::Time::now();
 
         path_.poses.clear();
-        double yaw{0.0};
+        // double yaw{0.0};
         for(size_t i = path_segment_start; i <= path_segment_end; i++) {
             pose_stamped.pose.position = route_.segments.at(i).end.position;
             pose_stamped.pose.orientation = route_.segments.at(i).end.orientation;
@@ -223,17 +259,112 @@ void LocalBehaviorControllerNode::updatePath() {
         }
 
         // Send the path or goal to the robot
-        if(!publish_goal_) {
+        if(!publish_goal_)
+        {
             pubPath_.publish(path_);
-        } else {
+        }
+        else
+        {
             if(!path_.poses.empty())
-                pubGoal_.publish(path_.poses.back());
+            {
+                // New goal candidate
+                move_base_msgs::MoveBaseGoal goal;
+                goal.target_pose = path_.poses.back();
+
+                geometry_msgs::PoseStamped last_goal_sent_correct_frame = last_goal_sent_;
+                if (goal.target_pose.header.frame_id != last_goal_sent_.header.frame_id)
+                {
+                    if(tf_listener_.waitForTransform(goal.target_pose.header.frame_id, last_goal_sent_.header.frame_id, ros::Time(0), ros::Duration(1.0)))
+                    {
+                        tf_listener_.transformPose(goal.target_pose.header.frame_id, last_goal_sent_, last_goal_sent_correct_frame);
+                    }
+                    else
+                    {
+                        ROS_WARN_STREAM("Transform between " << goal.target_pose.header.frame_id << " and " << last_goal_sent_.header.frame_id << " not available!");
+                        return;
+                    }
+                }
+
+                // Compare end of path to last goal we sent
+
+                // Compute "difference" between poses
+                geometry_msgs::Pose diff;
+                pose_cov_ops::inverseCompose(goal.target_pose.pose, last_goal_sent_correct_frame.pose, diff);
+
+                if (diff.position.x != 0. ||
+                    diff.position.y != 0. ||
+                    diff.orientation.x != 0. ||
+                    diff.orientation.y != 0. ||
+                    diff.orientation.z != 0. ||
+                    diff.orientation.w != 1.)
+                {
+                    // Wait for move base action server
+                    mbActionClient_->waitForServer();
+                    // actionlib::SimpleClientGoalState state = mbActionClient_->getState();
+                    // state
+                    // mbActionClient_->sendGoal(goal, &doneCb, &activeCb, &feedbackCb);
+                    mbActionClient_->sendGoal(goal);
+                    last_goal_sent_ = path_.poses.back();
+                }
+
+            }
             else
-                ROS_WARN("Local behavior : no goal published, because path is empty");
+                ROS_WARN("Local behavior: no goal published, because path is empty");
         }
     }
-
 }
+
+// void verifyGoalFeasibility()
+// {
+//     mbActionClient_->waitForServer();
+//     actionlib::SimpleClientGoalState state = mbActionClient_->getState();
+//     if (state != actionlib::SimpleClientGoalState::SUCCEEDED)
+//     {
+//         // use the local costmap and see if the current goal (last_goal_sent_) is ok
+//         if(!goalFinder_.isGoalAttainable(last_goal_sent_) ||
+//             state == actionlib::SimpleClientGoalState::ABORTED ||
+//             state == actionlib::SimpleClientGoalState::REJECTED)
+//         {
+//             move_base_msgs::MoveBaseGoal newGoal;
+//             goalFinder_.findNewGoal(last_goal_sent_, newGoal);
+//             mbActionClient_->sendGoal(newGoal);
+//             last_goal_sent_ = newGoal.target_pose;
+//         }
+//     }
+//     // done states = RECALLED, REJECTED, PREEMPTED, ABORTED, SUCCEEDED, or LOST
+//     // PENDING         = 0   # The goal has yet to be processed by the action server
+//     // ACTIVE          = 1   # The goal is currently being processed by the action server
+//     // PREEMPTED       = 2   # The goal received a cancel request after it started executing
+//     //                             #   and has since completed its execution (Terminal State)
+//     // SUCCEEDED       = 3   # The goal was achieved successfully by the action server (Terminal State)
+//     // ABORTED         = 4   # The goal was aborted during execution by the action server due
+//     //                             #    to some failure (Terminal State)
+//     // REJECTED        = 5   # The goal was rejected by the action server without being processed,
+//     //                             #    because the goal was unattainable or invalid (Terminal State)
+//     // PREEMPTING      = 6   # The goal received a cancel request after it started executing
+//     //                             #    and has not yet completed execution
+//     // RECALLING       = 7   # The goal received a cancel request before it started executing,
+//     //                             #    but the action server has not yet confirmed that the goal is canceled
+//     // RECALLED        = 8   # The goal received a cancel request before it started executing
+//     //                             #    and was successfully cancelled (Terminal State)
+//     // LOST            = 9   # An action client can determine that a goal is LOST. This should not be
+//     //                             #    sent over the wire by an action server
+// }
+
+// void LocalBehaviorControllerNode::mbActionActiveCb()
+// {
+//
+// }
+//
+// void LocalBehaviorControllerNode::mbActionFeedbackCb()
+// {
+//     // Sendes base pose
+// }
+//
+// void LocalBehaviorControllerNode::mbActionDoneCb()
+// {
+//
+// }
 
 void LocalBehaviorControllerNode::subCtrlCb ( const tuw_nav_msgs::ControllerStateConstPtr& msg ) {
     ctrl_state_ = *msg;
@@ -254,20 +385,22 @@ void LocalBehaviorControllerNode::subPoseCb ( const geometry_msgs::PoseWithCovar
     pose_odom_frame.pose=_pose->pose.pose;
 
     try {
-      ros::Time now = ros::Time::now();
-      if(tf_listener_.waitForTransform(_pose->header.frame_id, frame_id_, now, ros::Duration(1.0))) {
-        tf_listener_.transformPose(frame_id_, pose_odom_frame, pose_world_frame);
-        robot_pose_.pose = pose_world_frame.pose;
-        robot_pose_.covariance = _pose->pose.covariance;
-        progress_monitor_.updateProgress(tuw::Point2D(robot_pose_.pose.position.x, robot_pose_.pose.position.y) );
-      } else {
-        ROS_ERROR("Local behavior: transform between %s and %s is not available",_pose->header.frame_id.c_str(),frame_id_.c_str());
+        ros::Time now = ros::Time::now();
+        if(tf_listener_.waitForTransform(_pose->header.frame_id, frame_id_, now, ros::Duration(1.0))) {
+            tf_listener_.transformPose(frame_id_, pose_odom_frame, pose_world_frame);
+            robot_pose_.pose = pose_world_frame.pose;
+            robot_pose_.covariance = _pose->pose.covariance;
+            progress_monitor_.updateProgress(tuw::Point2D(robot_pose_.pose.position.x, robot_pose_.pose.position.y) );
+        }
+        else
+        {
+            ROS_ERROR("Local behavior: transform between %s and %s is not available",_pose->header.frame_id.c_str(),frame_id_.c_str());
+            return;
+        }
+    } catch (tf::TransformException ex) {
+        ROS_ERROR("%s",ex.what());
+        ros::Duration(1.0).sleep();
         return;
-      }
-    } catch (tf::TransformException ex){
-      ROS_ERROR("%s",ex.what());
-      ros::Duration(1.0).sleep();
-      return;
     }
 
 }
@@ -279,7 +412,7 @@ void LocalBehaviorControllerNode::subRobotInfoCb(const tuw_multi_robot_msgs::Rob
 }
 
 void LocalBehaviorControllerNode::publishRobotInfo() {
-    updatePath();
+    // updatePath();
     robot_info_.header.stamp = ros::Time::now();
     robot_info_.header.frame_id = frame_id_;
     robot_info_.robot_name = robot_name_;
@@ -301,7 +434,7 @@ bool LocalBehaviorControllerNode::sendViapoints(ifollow_nav_msgs::GetViapoints::
     geometry_msgs::PoseArray viapoints;
 
     for(const auto & pose_stamped : path_.poses) {
-      viapoints.poses.push_back(pose_stamped.pose);
+        viapoints.poses.push_back(pose_stamped.pose);
     }
 
     res.viapoints = viapoints;

@@ -53,21 +53,26 @@
   <!--   <doc_depend>doxygen</doc_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>geometry_msgs</build_depend>
-  <build_depend>nav_msgs</build_depend>
   <build_depend>roscpp</build_depend>
   <build_depend>tuw_multi_robot_msgs</build_depend>
   <build_depend>tuw_nav_msgs</build_depend>
   <build_depend>tuw_geometry</build_depend>
   <build_export_depend>geometry_msgs</build_export_depend>
-  <build_export_depend>nav_msgs</build_export_depend>
   <build_export_depend>roscpp</build_export_depend>
   <build_export_depend>tuw_multi_robot_msgs</build_export_depend>
   <exec_depend>geometry_msgs</exec_depend>
-  <exec_depend>nav_msgs</exec_depend>
   <exec_depend>tuw_nav_msgs</exec_depend>
   <exec_depend>roscpp</exec_depend>
   <exec_depend>tuw_geometry</exec_depend>
   <exec_depend>tuw_multi_robot_msgs</exec_depend>
+
+  <depend>nav_msgs</depend>
+  <depend>map_msgs</depend>
+  <depend>grid_map_core</depend>
+  <depend>grid_map_ros</depend>
+  <depend>actionlib</depend>
+  <depend>actionlib_msgs</depend>
+  <depend>pose_cov_ops</depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->
