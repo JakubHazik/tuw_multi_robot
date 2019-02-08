@@ -44,7 +44,7 @@ int main ( int argc, char **argv ) {
     ros::init ( argc, argv, "tuw_multi_robot_router" ); /// initializes the ros node with default name
     ros::NodeHandle n;
 
-    ros::Rate r ( 5 );
+    ros::Rate r ( 1 );
 
     multi_robot_router::Router_Node node ( n );
 
@@ -53,7 +53,6 @@ int main ( int argc, char **argv ) {
         ros::spinOnce();
         node.monitorExecution();
         node.updateTimeout ( r.expectedCycleTime().toSec() );
-        node.plan();
    }
 
     return 0;
@@ -183,7 +182,10 @@ bool Router_Node::registerNewRobotCB(tuw_multi_robot_msgs::RegisterRobot::Reques
     std::string robot_id = req.id;
     std::replace(robot_id.begin(), robot_id.end(), '_', '-');
 
-    if (!ssh_authentication(robot_id)) return false;
+    if (!ssh_authentication(robot_id)) {
+      ROS_ERROR("Registration failed");
+      return false;
+    }
 
     // std::ostringstream ss;
     // ss << std::setw(5) << std::setfill('0') << 12 << "\n";
@@ -218,43 +220,37 @@ bool Router_Node::registerNewRobotCB(tuw_multi_robot_msgs::RegisterRobot::Reques
 void Router_Node::monitorExecution() {
 
     for ( const RobotInfoPtr robot: active_robots_ ) {
-        std::map<std::string, double>::iterator it = finished_robots_.find ( robot->robot_name );
-        // If the robot is still driving, remove it from the finished robots list
-        if ( robot->status == tuw_multi_robot_msgs::RobotInfo::STATUS_DRIVING ) {
-            if ( it != finished_robots_.end() ) {
-                finished_robots_.erase ( it );
-                if ( monitor_enabled_ ) {
-                    ROS_INFO ( "%10s started!", robot->robot_name.c_str() );
-                }
+        // Check if each active robot has reached its goal
+        bool found_goal=false;
+        std::vector<tuw_multi_robot_msgs::RobotGoals>::const_iterator goal_it;
+
+        Eigen::Vector2d actual_position{robot->getPose()[0],robot->getPose()[1]}; 
+        Eigen::Vector2d goal_position{0.0,0.0};
+
+        for ( auto goal=goals_msg_.robots.begin() ; goal!=goals_msg_.robots.end() ; goal++ ) {
+            if(!goal->robot_name.compare(robot->robot_name)) {
+                goal_position[0]=goal->destinations[0].position.x;
+                goal_position[1]=goal->destinations[0].position.y;
+                goal_it = goal; 
+                found_goal=true;
+                break;
             }
-        } else {
-            // If robot has reached its goal
-            if ( it == finished_robots_.end() ) {
-                double duration = (ros::Time::now() -  time_first_robot_started_).toSec();
-                finished_robots_[robot->robot_name] = duration;
-                int nr_of_driving_robots = active_robots_.size() - finished_robots_.size();
-                if ( monitor_enabled_ ) {
-                    ROS_INFO ( "%10s stopped @ %6.2lf sec, %3i robots left",  robot->robot_name.c_str(), duration, nr_of_driving_robots );
-                }
+        }
+
+        if(found_goal) {
+            if((actual_position-goal_position).norm() < 0.5) {
+                goals_msg_.robots.erase(goal_it); 
             }
         }
     }
-    
-    // If every robot reached their goal, stop monitoring and execution
-    if ( finished_robots_.size() == active_robots_.size() ) {
-        if ( monitor_enabled_ ) {
-            ros::Duration duration = ros::Time::now() -  time_first_robot_started_;
-            ROS_INFO ( "Execution finished after %lf sec!", duration.toSec() );
-            std::stringstream ss;
-            for(std::map<std::string, double>::iterator it = finished_robots_.begin(); it!=finished_robots_.end(); ++it){
-                ss << it->second << ", ";
-            }
-            ROS_INFO ( "Duration by robot: \n [%s]", ss.str().c_str() );
-        }
-        monitor_enabled_ = false;
-    } else {
-        monitor_enabled_ = true;
-    }
+
+
+    ROS_INFO("Number of active robots : %d", goals_msg_.robots.size());
+   
+    if( !active_robots_.empty() ) {
+        ROS_INFO("Replanning");
+        plan();
+    } 
 
 }
 
@@ -293,10 +289,10 @@ void Router_Node::labelledGoalCallback ( const tuw_multi_robot_msgs::RobotGoals 
     // Check if the robot associated with goal is subscribed to the router
     bool is_robot_subscribed=false;
     for(auto it=subscribed_robots_.begin();it!=subscribed_robots_.end();it++) {
-      if(!_goal.robot_name.compare((*it)->robot_name)) {
-        is_robot_subscribed=true;
-        break;
-      }
+        if(!_goal.robot_name.compare((*it)->robot_name)) {
+            is_robot_subscribed=true;
+            break;
+        }
     }
 
     // If the robot is subscribed
@@ -551,9 +547,9 @@ bool Router_Node::preparePlanning ( std::vector<float> &_radius, std::vector<Eig
         auto active_goal=goal_msg.robots.end();
         // For each robot, if there is a new goal for it, then use it
         for(auto it=goal_msg.robots.begin();it!=goal_msg.robots.end();it++) {
-          if(!subscribed_robots_[k]->robot_name.compare(it->robot_name) ) {
-            active_goal=it;
-          }
+            if(!subscribed_robots_[k]->robot_name.compare(it->robot_name) ) {
+                active_goal=it;
+            }
         }
 
 
@@ -573,7 +569,6 @@ bool Router_Node::preparePlanning ( std::vector<float> &_radius, std::vector<Eig
             _goals.push_back ( Eigen::Vector3d ( p.position.x, p.position.y, getYaw ( p.orientation ) ) );
         } else {
             // If the robot has no new goal, then just assign same start and goal position
-            active_robots_.push_back ( *active_robot );
             _radius.push_back ( ( *active_robot )->radius() );
             _starts.push_back ( ( *active_robot )->getPose() );
             _goals.push_back ( ( *active_robot )->getPose() );
@@ -584,9 +579,9 @@ bool Router_Node::preparePlanning ( std::vector<float> &_radius, std::vector<Eig
     }
 
 
-    robot_names.resize ( active_robots_.size() );
-    for ( size_t i=0; i < active_robots_.size(); i++ ) {
-        robot_names[i] = active_robots_[i]->robot_name;
+    robot_names.resize ( subscribed_robots_.size() );
+    for ( size_t i=0; i < subscribed_robots_.size(); i++ ) {
+        robot_names[i] = subscribed_robots_[i]->robot_name;
     }
 
     return retval;

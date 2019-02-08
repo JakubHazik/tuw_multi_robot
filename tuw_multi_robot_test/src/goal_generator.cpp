@@ -91,8 +91,8 @@ int main(int argc, char** argv){
 
   parseWaypointsFile(nh, goals_list, world_frame);
 
-  ros::Subscriber robotPoseSub = nh.subscribe("/" + robot_id + "/global/odom", 1, odomCallback);
-  ros::Publisher goalPub = nh.advertise<tuw_multi_robot_msgs::RobotGoals>("/goal_id",1); 
+  ros::Subscriber robotPoseSub = nh.subscribe("/" + robot_id + "/odom", 1, odomCallback);
+  ros::Publisher goalPub = nh.advertise<tuw_multi_robot_msgs::RobotGoals>("/labelled_goal",1); 
 
   // Transform
   tf::TransformListener tf_listener;
@@ -134,7 +134,8 @@ int main(int argc, char** argv){
         break;
       }
     }
-
+    
+    ROS_ERROR("%f",distance2d(goal.position.x,goal.position.y,pose_odom_frame.pose.position.x,pose_odom_frame.pose.position.y));
 
     if(distance2d(goal.position.x,goal.position.y,pose_odom_frame.pose.position.x,pose_odom_frame.pose.position.y) < 1.0) {
       ros::Duration(2.0).sleep();

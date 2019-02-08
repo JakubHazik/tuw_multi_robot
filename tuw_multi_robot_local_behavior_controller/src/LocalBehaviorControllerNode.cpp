@@ -128,7 +128,7 @@ LocalBehaviorControllerNode::LocalBehaviorControllerNode ( ros::NodeHandle &n )
 
     pubRobotInfo_ = n.advertise<tuw_multi_robot_msgs::RobotInfo> ( "/robot_info", 10000 );
 
-    // Either you publish and the goal and the navigation stack retreive the path through a service. Either you send the full path.
+    // Either you publish the goal and the navigation stack retrieve the path through a service. Either you send the full path.
     if(publish_goal_) {
       ROS_INFO("Local behavior : starting goal publishing mode");
       pubGoal_ = n.advertise<geometry_msgs::PoseStamped> ( "local_goal", 1 );
@@ -138,6 +138,7 @@ LocalBehaviorControllerNode::LocalBehaviorControllerNode ( ros::NodeHandle &n )
       pubPath_ = n.advertise<nav_msgs::Path>("path",1);
     }
 
+    // Robot registration
     ros::ServiceClient client = n_.serviceClient<tuw_multi_robot_msgs::RegisterRobot>("/register_robot");
     ROS_INFO_STREAM("Attempt to register.");
     client.waitForExistence();
@@ -151,8 +152,8 @@ LocalBehaviorControllerNode::LocalBehaviorControllerNode ( ros::NodeHandle &n )
     // Send request
     if (!client.call(srv))
     {
-            ROS_ERROR_STREAM("Unable to make a call to register robot at the registration center.");
-            return;
+        ROS_ERROR_STREAM("Unable to make a call to register robot at the registration center.");
+        return;
     }
     ros::Duration round_trip = ros::Time::now() - begin;
 
@@ -173,6 +174,7 @@ LocalBehaviorControllerNode::LocalBehaviorControllerNode ( ros::NodeHandle &n )
     }
 }
 
+
 void LocalBehaviorControllerNode::updatePath() {
 
     bool try_reach_goal=false;
@@ -181,7 +183,6 @@ void LocalBehaviorControllerNode::updatePath() {
     // Go through all segments in the route
     for(size_t i = path_segment_start; i < route_.segments.size(); i++) {
         const tuw_multi_robot_msgs::RouteSegment &seg = route_.segments.at(i);
-        // Go through all preconditions and check if they are fulfilled
         for(auto&& prec : seg.preconditions) {
             std::string other_robot_name = prec.robot_id;
             auto other_robot = robot_steps_.find(other_robot_name);
@@ -206,21 +207,22 @@ void LocalBehaviorControllerNode::updatePath() {
         }
 
         // If no preconditions then we are trying to reach the goal
-        if(i == route_.segments.size()-1) 
+        if(i == route_.segments.size()-1) {
           try_reach_goal=true;
+        }
     }
 
     if(last_active_segment > path_segment_end) {
         path_segment_end = last_active_segment;
         path_segment_start = progress_monitor_.getProgress() + 1;
-        geometry_msgs::PoseStamped pose_stamped;
+        // Update path
         path_.header = route_.header;
         path_.header.stamp = ros::Time::now();
+        path_.poses.clear();
+
+        geometry_msgs::PoseStamped pose_stamped;
         pose_stamped.header = route_.header;
         pose_stamped.header.stamp = ros::Time::now();
-
-        path_.poses.clear();
-        double yaw{0.0};
         for(size_t i = path_segment_start; i <= path_segment_end; i++) {
             pose_stamped.pose.position = route_.segments.at(i).end.position;
             pose_stamped.pose.orientation = route_.segments.at(i).end.orientation;
@@ -229,7 +231,7 @@ void LocalBehaviorControllerNode::updatePath() {
 
         // If robot is not trying to reach the goal, then the orientation should be computed from the segment orientation
         if(!try_reach_goal) {
-            yaw=atan2(route_.segments.at(path_segment_end).end.position.y-route_.segments.at(path_segment_end).start.position.y,
+            double yaw=atan2(route_.segments.at(path_segment_end).end.position.y-route_.segments.at(path_segment_end).start.position.y,
                       route_.segments.at(path_segment_end).end.position.x-route_.segments.at(path_segment_end).start.position.x);
             path_.poses.back().pose.orientation=tf::createQuaternionMsgFromYaw(yaw);
         }
@@ -247,9 +249,11 @@ void LocalBehaviorControllerNode::updatePath() {
 
 }
 
+
 void LocalBehaviorControllerNode::subCtrlCb ( const tuw_nav_msgs::ControllerStateConstPtr& msg ) {
     ctrl_state_ = *msg;
 }
+
 
 void LocalBehaviorControllerNode::subRouteCb ( const tuw_multi_robot_msgs::Route::ConstPtr &_route ) {
     route_ = *_route;
@@ -257,6 +261,7 @@ void LocalBehaviorControllerNode::subRouteCb ( const tuw_multi_robot_msgs::Route
     path_segment_start = 0;
     progress_monitor_.init(route_);
 }
+
 
 void LocalBehaviorControllerNode::subPoseCb ( const geometry_msgs::PoseWithCovarianceStampedConstPtr &_pose ) {
 
@@ -284,6 +289,7 @@ void LocalBehaviorControllerNode::subPoseCb ( const geometry_msgs::PoseWithCovar
 
 }
 
+
 void LocalBehaviorControllerNode::subRobotInfoCb(const tuw_multi_robot_msgs::RobotInfo_<std::allocator<void> >::ConstPtr &_robot_info) {
     std::string other_robot_name = _robot_info->sync.robot_id;
     int other_robot_process = _robot_info->sync.current_route_segment;
@@ -291,14 +297,16 @@ void LocalBehaviorControllerNode::subRobotInfoCb(const tuw_multi_robot_msgs::Rob
 }
 
 void LocalBehaviorControllerNode::publishRobotInfo() {
+
     updatePath();
+
     robot_info_.header.stamp = ros::Time::now();
     robot_info_.header.frame_id = frame_id_;
     robot_info_.robot_name = robot_name_;
     robot_info_.pose = robot_pose_;
     robot_info_.shape = robot_info_.SHAPE_CIRCLE;
     robot_info_.shape_variables.resize ( 1 );
-    robot_info_.shape_variables[0] =  robot_radius_;
+    robot_info_.shape_variables[0] = robot_radius_;
     robot_info_.sync.robot_id = robot_name_;
     robot_info_.sync.current_route_segment = progress_monitor_.getProgress();
     robot_info_.mode = robot_info_.MODE_NA;

@@ -114,6 +114,11 @@ namespace multi_robot_router
 
         std::vector<uint32_t> priorityList = priority_scheduler_.getActualSchedule();
         std::vector<float> speedList = speed_scheduler_.getActualSpeeds();
+  
+        for(auto speed : speedList) {
+          ROS_ERROR("Speed : %f",speed);
+        }
+
         uint32_t firstSchedule = 0;
         bool found = false;
         uint32_t lastPlannedRobot;

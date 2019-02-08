@@ -32,6 +32,7 @@
 #include <nav_msgs/Path.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <geometry_msgs/PoseArray.h>
+#include <actionlib/client/simple_action_client.h>
 #include <tuw_nav_msgs/ControllerState.h>
 #include <tuw_multi_robot_msgs/Route.h>
 #include <tuw_multi_robot_msgs/RobotInfo.h>
@@ -50,13 +51,12 @@ namespace tuw_multi_robot_route_to_path
   {
     public:
       LocalBehaviorControllerNode(ros::NodeHandle &n);
-    
-      // ROS:
+       
+      void publishRobotInfo();
       ros::NodeHandle n_;        ///< Node handler to the root node
       ros::NodeHandle n_param_;  ///< Node handler to the current node
       std::unique_ptr<ros::Rate> rate_;
     
-      void publishRobotInfo();
     private:
       void updatePath();
       bool sendViapoints(ifollow_nav_msgs::GetViapoints::Request  &req, ifollow_nav_msgs::GetViapoints::Response &res);
