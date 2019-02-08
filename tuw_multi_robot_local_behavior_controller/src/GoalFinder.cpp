@@ -31,6 +31,7 @@
 #include "tuw_multi_robot_route_to_path/GoalFinder.h"
 #include "tf/transform_listener.h"
 #include "grid_map_ros/GridMapRosConverter.hpp"
+#include <pose_cov_ops/pose_cov_ops.h>
 
 namespace goal_finder {
 
@@ -42,6 +43,7 @@ GoalFinder::GoalFinder()
 
     // TODO
     // stop using this hardcoded topic names. Get params (or at least do remaps)
+    base_link_frame_id_ = "base_link";
     cmap_sub_ = n.subscribe("/move_base/local_costmap/costmap", 1, &GoalFinder::costmapCallback, this);
     cmap_update_sub_ = n.subscribe("/move_base/local_costmap/costmap_updates", 1, &GoalFinder::costmapUpdateCallback, this);
     footprint_sub_ = n.subscribe("/move_base/local_costmap/obstacle_layer_footprint/footprint_stamped", 1, &GoalFinder::footprintCallback, this);
@@ -57,33 +59,110 @@ GoalFinder::GoalFinder()
 GoalFinder::~GoalFinder(){
 }
 
-bool GoalFinder::isGoalAttainable(const geometry_msgs::PoseStamped& last_goal_sent)
+void GoalFinder::transformFootprint(const geometry_msgs::PoseStamped& goal,
+                                    const geometry_msgs::PolygonStamped& footprint,
+                                    gm::Polygon& footprint_out)
 {
-    geometry_msgs::PoseStamped goal_cmap_frame = last_goal_sent;
-    if (last_goal_sent.header.frame_id != grid_frame_ &&
-        tf_listener_.waitForTransform(last_goal_sent.header.frame_id,
-                                      grid_frame_,
-                                      ros::Time(0),
-                                      ros::Duration(1.0)))
+    // Compute the polygon reprensenting the footprint of the robot at the
+    // goal pose
+    gm::Polygon gm_footprint;
+    gm_footprint.setFrameId(goal.header.frame_id);
+
+    // Verify that footprint polygon is expressed in the base_link frame
+    std::string fp_frame = footprint.header.frame_id;
+    if (fp_frame != base_link_frame_id_)
     {
-        tf_listener_.transformPose(grid_frame_, last_goal_sent, goal_cmap_frame);
+        if(tf_listener_.waitForTransform(fp_frame,
+                                   base_link_frame_id_,
+                                   ros::Time(0),
+                                   ros::Duration(1.0)))
+        {
+            geometry_msgs::PointStamped point;
+            point.header.frame_id = footprint.header.frame_id;
+            for (const auto& vertex : footprint.polygon.points)
+            {
+                point.point.x = vertex.x;
+                point.point.y = vertex.y;
+                point.point.z = vertex.z;
+                geometry_msgs::PointStamped point_at_base_link;
+                // geometry_msgs::PointStamped point_at_goal;
+                geometry_msgs::Pose pose_at_goal;
+                tf_listener_.transformPoint(base_link_frame_id_, point, point_at_base_link);
+                geometry_msgs::Pose pose_at_base_link;
+                pose_at_base_link.position = point_at_base_link.point;
+                pose_at_base_link.orientation.x = 0;
+                pose_at_base_link.orientation.y = 0;
+                pose_at_base_link.orientation.z = 0;
+                pose_at_base_link.orientation.w = 1;
+                pose_cov_ops::compose(goal.pose, pose_at_base_link, pose_at_goal);
+                // pose_cov_ops::compose(goal, point_at_base_link, point_at_goal);
+                gm_footprint.addVertex(gm::Position(pose_at_goal.position.x,  pose_at_goal.position.y));
+            }
+
+        }
+        else
+        {
+            ROS_ERROR("Goal Finder: transform between %s and %s is not available",
+                      base_link_frame_id_.c_str(), fp_frame .c_str());
+            throw;
+        }
     }
     else
     {
-        ROS_ERROR("Goal Finder: transform between %s and %s is not available",
-                  grid_frame_.c_str(), last_goal_sent.header.frame_id.c_str());
-        throw;
+        geometry_msgs::Pose pose;
+        for (const auto& vertex : footprint.polygon.points)
+        {
+            pose.position.x = vertex.x;
+            pose.position.y = vertex.y;
+            pose.position.z = vertex.z;
+            pose.orientation.x = 0;
+            pose.orientation.y = 0;
+            pose.orientation.z = 0;
+            pose.orientation.w = 1;
+            geometry_msgs::Pose pose_at_goal;
+            pose_cov_ops::compose(goal.pose, pose, pose_at_goal);
+            // pose_cov_ops::compose(goal, point_at_base_link, point_at_goal);
+            gm_footprint.addVertex(gm::Position(pose_at_goal.position.x,  pose_at_goal.position.y));
+        }
+    }
+    footprint_out = gm_footprint;
+}
+
+void GoalFinder::transformFootprint(const geometry_msgs::PoseStamped& goal,
+                                    gm::Polygon& footprint_out)
+{
+    transformFootprint(goal, footprint_, footprint_out);
+}
+
+bool GoalFinder::isGoalAttainable(const geometry_msgs::PoseStamped& last_goal_sent)
+{
+    geometry_msgs::PoseStamped goal_cmap_frame = last_goal_sent;
+    if (last_goal_sent.header.frame_id != grid_frame_)
+    {
+        if (tf_listener_.waitForTransform(last_goal_sent.header.frame_id,
+                                      grid_frame_,
+                                      ros::Time(0),
+                                      ros::Duration(1.0)))
+        {
+            tf_listener_.transformPose(grid_frame_, last_goal_sent, goal_cmap_frame);
+        }
+        else
+        {
+            ROS_ERROR("Goal Finder: transform between %s and %s is not available",
+                      grid_frame_.c_str(), last_goal_sent.header.frame_id.c_str());
+            throw;
+        }
     }
 
-    // transform gm::Polygon using goal_cmap_frame
+    gm::Polygon gm_footprint;
+    transformFootprint(goal_cmap_frame, gm_footprint);
 
     bool find_new_flag = false;
-    for (gm::PolygonIterator iterator(grid_map_, footprint_);
+    for (gm::PolygonIterator iterator(grid_map_, gm_footprint);
          !iterator.isPastEnd(); ++iterator)
     {
         if (grid_map_.at("local_costmap", *iterator) == 100)
         {
-            // PROBLEM
             // Have to find new goal pose
             find_new_flag = true;
             break;
@@ -96,25 +175,28 @@ void GoalFinder::findNewGoal(const geometry_msgs::PoseStamped& last_goal_sent,
                              geometry_msgs::PoseStamped& new_goal)
 {
     geometry_msgs::PoseStamped goal_cmap_frame = last_goal_sent;
-    if (last_goal_sent.header.frame_id != grid_frame_ &&
-        tf_listener_.waitForTransform(last_goal_sent.header.frame_id,
+    if (last_goal_sent.header.frame_id != grid_frame_)
+    {
+        if (tf_listener_.waitForTransform(last_goal_sent.header.frame_id,
                                       grid_frame_,
                                       ros::Time(0),
                                       ros::Duration(1.0)))
-    {
-        tf_listener_.transformPose(grid_frame_, last_goal_sent, goal_cmap_frame);
-    }
-    else
-    {
-        ROS_ERROR("Goal Finder: transform between %s and %s is not available",
-                  grid_frame_.c_str(), last_goal_sent.header.frame_id.c_str());
-        throw;
+        {
+            tf_listener_.transformPose(grid_frame_, last_goal_sent, goal_cmap_frame);
+        }
+        else
+        {
+            ROS_ERROR("Goal Finder: transform between %s and %s is not available",
+                      grid_frame_.c_str(), last_goal_sent.header.frame_id.c_str());
+            throw;
+        }
     }
 
-    // transform gm::Polygon using goal_cmap_frame
+    gm::Polygon gm_footprint;
+    transformFootprint(goal_cmap_frame, gm_footprint);
 
     bool find_new_flag = false;
-    for (gm::PolygonIterator iterator(grid_map_, footprint_);
+    for (gm::PolygonIterator iterator(grid_map_, gm_footprint);
          !iterator.isPastEnd(); ++iterator)
     {
         if (grid_map_.at("local_costmap", *iterator) == 100)
@@ -128,26 +210,21 @@ void GoalFinder::findNewGoal(const geometry_msgs::PoseStamped& last_goal_sent,
 
     if (find_new_flag)
     {
+        ROS_INFO("Goal Finder: a new goal was found");
         // Use integer programming to find new pose
         // Use cells in grid for position and finite number of yaws for orientation
         new_goal = last_goal_sent;
     }
     else
     {
+        ROS_INFO("Goal Finder: the current goal is actually fine");
         new_goal = last_goal_sent;
     }
 }
 
 void GoalFinder::footprintCallback(const geometry_msgs::PolygonStamped& footprint)
 {
-    gm::Polygon gm_footprint;
-    gm_footprint.setFrameId(footprint.header.frame_id);
-
-    for (const auto& vertex : footprint.polygon.points)
-    {
-        gm_footprint.addVertex(gm::Position( vertex.x,  vertex.y));
-    }
-    footprint_ = gm_footprint;
+    footprint_ = footprint;
 }
 
 void GoalFinder::costmapCallback(const nav_msgs::OccupancyGrid& occupancy_grid)

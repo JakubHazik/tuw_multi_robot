@@ -158,6 +158,7 @@ add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EX
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(${PROJECT_NAME}_node src/MultiRobotLocalBehaviorController.cpp)
+
 target_link_libraries(${PROJECT_NAME}_node
   ${PROJECT_NAME}
   ${catkin_LIBRARIES}
@@ -184,6 +185,13 @@ target_link_libraries(tuw_local_behavior_controller_node
   ${PROJECT_NAME}
   ${catkin_LIBRARIES}
   ${LIBSSH_LIBRARIES}
+)
+
+
+add_executable(${PROJECT_NAME}_gf_test test/GoalFinderTest.cpp src/GoalFinder.cpp)
+target_link_libraries(${PROJECT_NAME}_gf_test
+  ${PROJECT_NAME}
+  ${catkin_LIBRARIES}
 )
 
 #############

@@ -53,12 +53,17 @@ public:
     ~GoalFinder();
     void findNewGoal(const geometry_msgs::PoseStamped&, geometry_msgs::PoseStamped&);
     bool isGoalAttainable(const geometry_msgs::PoseStamped&);
+    void transformFootprint(const geometry_msgs::PoseStamped&,
+                            const geometry_msgs::PolygonStamped&,
+                            gm::Polygon&);
 
 private:
     // Local costmap subscriptions
     ros::Subscriber cmap_sub_;
     ros::Subscriber cmap_update_sub_;
     ros::Subscriber footprint_sub_;
+
+    std::string base_link_frame_id_;
 
     // Grid and grid frame
     std::string grid_frame_;
@@ -69,11 +74,14 @@ private:
 
     // geometry_msgs::PoseStamped current_goal_;
 
-    gm::Polygon footprint_;
+    // gm::Polygon footprint_;
+    geometry_msgs::PolygonStamped footprint_;
 
     void costmapCallback(const nav_msgs::OccupancyGrid&);
     void costmapUpdateCallback(const map_msgs::OccupancyGridUpdate&);
     void footprintCallback(const geometry_msgs::PolygonStamped&);
+    void transformFootprint(const geometry_msgs::PoseStamped&,
+                            gm::Polygon&);
 
 };
 
