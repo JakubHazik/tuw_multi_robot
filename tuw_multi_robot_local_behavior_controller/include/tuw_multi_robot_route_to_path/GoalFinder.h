@@ -51,11 +51,14 @@ class GoalFinder
 public:
     GoalFinder();
     ~GoalFinder();
-    void findNewGoal(const geometry_msgs::PoseStamped&, geometry_msgs::PoseStamped&);
+    bool findNewGoal(const geometry_msgs::PoseStamped&, geometry_msgs::PoseStamped&);
     bool isGoalAttainable(const geometry_msgs::PoseStamped&);
     void transformFootprint(const geometry_msgs::PoseStamped&,
                             const geometry_msgs::PolygonStamped&,
                             gm::Polygon&);
+
+    void setCostmap(const nav_msgs::OccupancyGrid& cmap) { costmapCallback(cmap); } ;
+    void setFootprint(const geometry_msgs::PolygonStamped& footprint) { footprintCallback(footprint); } ;
 
 private:
     // Local costmap subscriptions
@@ -77,10 +80,13 @@ private:
     // gm::Polygon footprint_;
     geometry_msgs::PolygonStamped footprint_;
 
+    bool got_footprint_;
+    bool got_costmap_;
+
     void costmapCallback(const nav_msgs::OccupancyGrid&);
     void costmapUpdateCallback(const map_msgs::OccupancyGridUpdate&);
     void footprintCallback(const geometry_msgs::PolygonStamped&);
-    void transformFootprint(const geometry_msgs::PoseStamped&,
+    bool transformFootprint(const geometry_msgs::PoseStamped&,
                             gm::Polygon&);
 
 };

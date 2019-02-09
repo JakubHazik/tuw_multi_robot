@@ -300,8 +300,6 @@ void LocalBehaviorControllerNode::updatePath()
                 {
                     // Wait for move base action server
                     mbActionClient_->waitForServer();
-                    // actionlib::SimpleClientGoalState state = mbActionClient_->getState();
-                    // state
                     // mbActionClient_->sendGoal(goal, &doneCb, &activeCb, &feedbackCb);
                     mbActionClient_->sendGoal(goal);
                     last_goal_sent_ = path_.poses.back();

@@ -147,6 +147,7 @@ add_library(${PROJECT_NAME}
   src/RobotRouteToPath.cpp
   src/RobotStateObserver.cpp
   src/RouteProgressMonitor.cpp
+  src/GoalFinder.cpp
 )
 
 ## Add cmake target dependencies of the library
@@ -187,12 +188,12 @@ target_link_libraries(tuw_local_behavior_controller_node
   ${LIBSSH_LIBRARIES}
 )
 
-
-add_executable(${PROJECT_NAME}_gf_test test/GoalFinderTest.cpp src/GoalFinder.cpp)
-target_link_libraries(${PROJECT_NAME}_gf_test
-  ${PROJECT_NAME}
-  ${catkin_LIBRARIES}
-)
+# Old test without gtest
+# add_executable(${PROJECT_NAME}_gf_test test/GoalFinderTest.cpp src/GoalFinder.cpp)
+# target_link_libraries(${PROJECT_NAME}_gf_test
+#   ${PROJECT_NAME}
+#   ${catkin_LIBRARIES}
+# )
 
 #############
 ## Install ##
@@ -232,6 +233,20 @@ install(TARGETS tuw_local_behavior_controller_node ${PROJECT_NAME} ${PROJECT_NAM
 #############
 ## Testing ##
 #############
+
+
+# if(CATKIN_ENABLE_TESTING)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+## Add gtest based cpp test target and link libraries
+catkin_add_gtest(${PROJECT_NAME}-test
+  test/GoalFinderTest.cpp
+  )
+# endif()
+
+if(TARGET ${PROJECT_NAME}-test)
+  target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME} ${catkin_LIBRARIES})
+endif()
+
 
 ## Add gtest based cpp test target and link libraries
 # catkin_add_gtest(${PROJECT_NAME}-test test/test_tuw_multi_robot_route_to_path.cpp)
