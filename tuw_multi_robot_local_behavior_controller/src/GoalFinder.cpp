@@ -25,13 +25,14 @@
 * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *
-* Author: José MENDES FILHO
+* Author: José MENDES FILHO (mendesfilho@pm.me)
 *******************************************************************************/
 
 #include "tuw_multi_robot_route_to_path/GoalFinder.h"
 #include "tf/transform_listener.h"
 #include "grid_map_ros/GridMapRosConverter.hpp"
 #include <pose_cov_ops/pose_cov_ops.h>
+#include "tuw_multi_robot_route_to_path/GoalFinderOpt.h"
 
 namespace goal_finder {
 
@@ -219,6 +220,7 @@ bool GoalFinder::findNewGoal(const geometry_msgs::PoseStamped& last_goal_sent,
         {
             // PROBLEM
             // Have to find new goal pose
+            mainfunc();
             find_new_flag = true;
             break;
         }

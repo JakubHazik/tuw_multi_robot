@@ -148,6 +148,8 @@ add_library(${PROJECT_NAME}
   src/RobotStateObserver.cpp
   src/RouteProgressMonitor.cpp
   src/GoalFinder.cpp
+  src/GoalFinderOpt.cpp
+  src/midaco.c
 )
 
 ## Add cmake target dependencies of the library
@@ -180,7 +182,7 @@ target_link_libraries(${PROJECT_NAME}_node
 #   ${catkin_LIBRARIES}
 # )
 
-add_executable(tuw_local_behavior_controller_node src/LocalBehaviorControllerNode.cpp src/GoalFinder.cpp)
+add_executable(tuw_local_behavior_controller_node src/LocalBehaviorControllerNode.cpp src/GoalFinder.cpp src/GoalFinderOpt.cpp src/midaco.c)
 add_dependencies(tuw_local_behavior_controller_node ${catkin_EXPORTED_TARGETS})
 target_link_libraries(tuw_local_behavior_controller_node
   ${PROJECT_NAME}
