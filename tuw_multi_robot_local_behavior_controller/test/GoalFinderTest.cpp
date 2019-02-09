@@ -1,3 +1,33 @@
+/*******************************************************************************
+* 2-Clause BSD License
+*
+* Copyright (c) 2019, iFollow Robotics
+* All rights reserved.
+*
+* Redistribution and use in source and binary forms, with or without
+* modification, are permitted provided that the following conditions are met:
+*
+* 1. Redistributions of source code must retain the above copyright notice, this
+*   list of conditions and the following disclaimer.
+*
+* 2. Redistributions in binary form must reproduce the above copyright notice,
+*   this list of conditions and the following disclaimer in the documentation
+*   and/or other materials provided with the distribution.
+*
+* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+* AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+* IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+* DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+* FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+* DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+* SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+* CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+* OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+* OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*
+* Author: José MENDES FILHO (mendesfilho@pm.me)
+*******************************************************************************/
+
 #include <gtest/gtest.h>
 #include "ros/ros.h"
 #include "tuw_multi_robot_route_to_path/GoalFinder.h"
@@ -178,7 +208,7 @@ TEST(GoalFinder, findNewGoal)
     goal.pose.position.y = occupancyGrid.info.height*occupancyGrid.info.resolution/2.+occupancyGrid.info.origin.position.y;
     goal.pose.position.z = 0;
     // random goal orientation (rotation around z)
-    double yaw = (std::rand()/((RAND_MAX + 1u)/361)) /    M_PI*180;
+    double yaw = (std::rand()/((RAND_MAX + 1u)/361)) / M_PI*180;
     goal.pose.orientation.x = 0;
     goal.pose.orientation.y = 0;
     goal.pose.orientation.z = sin(yaw/2);
@@ -190,39 +220,28 @@ TEST(GoalFinder, findNewGoal)
     geometry_msgs::Pose diff;
     pose_cov_ops::inverseCompose(goal.pose, new_goal.pose, diff);
 
-    if (found)
+    if (gf.isGoalAttainable(goal) || !found)
     {
-        if (gf.isGoalAttainable(goal)) // new goal should be equal to first goal
-        {
-            // diff should be zero
-            ASSERT_EQ(0, diff.position.x);
-            ASSERT_EQ(0, diff.position.y);
-            ASSERT_EQ(0, diff.orientation.x);
-            ASSERT_EQ(0, diff.orientation.y);
-            ASSERT_EQ(0, diff.orientation.z);
-            ASSERT_EQ(1, diff.orientation.w);
-        }
-        else // new goal should be different to first goal
-        {
-            // bool diff_not_zero;
-            bool diff_not_zero = diff.position.x != 0. ||
-                                diff.position.y != 0. ||
-                                diff.orientation.x != 0. ||
-                                diff.orientation.y != 0. ||
-                                diff.orientation.z != 0. ||
-                                diff.orientation.w != 1.;
-            ASSERT_EQ(true, diff_not_zero);
-            // diff should be not zero
-        }
-    }
-    else // new goal should be equal to first goal
-    {
+        // new goal should be equal to prev goal
+
         ASSERT_EQ(0, diff.position.x);
         ASSERT_EQ(0, diff.position.y);
         ASSERT_EQ(0, diff.orientation.x);
         ASSERT_EQ(0, diff.orientation.y);
         ASSERT_EQ(0, diff.orientation.z);
         ASSERT_EQ(1, diff.orientation.w);
+    }
+    else
+    {
+        // new goal should be different from prev goal
+
+        bool diff_not_zero = diff.position.x != 0. ||
+                             diff.position.y != 0. ||
+                             diff.orientation.x != 0. ||
+                             diff.orientation.y != 0. ||
+                             diff.orientation.z != 0. ||
+                             diff.orientation.w != 1.;
+        ASSERT_EQ(true, diff_not_zero);
     }
 }
 
