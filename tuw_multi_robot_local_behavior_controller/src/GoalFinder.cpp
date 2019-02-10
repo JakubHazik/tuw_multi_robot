@@ -239,7 +239,6 @@ void GoalFinder::costmapUpdateCallback(const map_msgs::OccupancyGridUpdate& upda
         }
     }
     gm::GridMapRosConverter::fromOccupancyGrid(occupancy_grid, "local_costmap", grid_map_);
-    got_costmap_ = true;
 }
 
 }
