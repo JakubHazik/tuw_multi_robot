@@ -29,6 +29,7 @@
 *******************************************************************************/
 
 #include "tuw_multi_robot_route_to_path/GoalFinder.h"
+#include "tuw_multi_robot_route_to_path/GoalFinderOpt.h"
 #include "tf/transform_listener.h"
 #include "grid_map_ros/GridMapRosConverter.hpp"
 #include <pose_cov_ops/pose_cov_ops.h>
@@ -218,9 +219,7 @@ bool GoalFinder::findNewGoal(const geometry_msgs::PoseStamped& last_goal_sent,
     {
         if (grid_map_.at("local_costmap", *iterator) == 100)
         {
-            // PROBLEM
             // Have to find new goal pose
-            mainfunc();
             find_new_flag = true;
             break;
         }
@@ -228,14 +227,12 @@ bool GoalFinder::findNewGoal(const geometry_msgs::PoseStamped& last_goal_sent,
 
     if (find_new_flag)
     {
-        // if (couldn't finde new)
-        // {
-        //     return false;
-        // }
+        if (!findOptGoal(grid_map_, gm_footprint, goal_cmap_frame, new_goal))
+        {
+            ROS_DEBUG("Goal Finder: failed to find a new goal");
+            return false;
+        }
         ROS_DEBUG("Goal Finder: a new goal was found");
-        // Use integer programming to find new pose
-        // Use cells in grid for position and finite number of yaws for orientation
-        new_goal = last_goal_sent;
         return true;
     }
     else

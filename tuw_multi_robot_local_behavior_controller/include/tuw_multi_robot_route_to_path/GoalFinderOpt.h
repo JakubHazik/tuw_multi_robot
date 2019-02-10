@@ -40,7 +40,10 @@ namespace gm = grid_map;
 namespace goal_finder
 {
 
-int mainfunc();
+int findOptGoal(const gm::GridMap& grid_map,
+                const gm::Polygon& footprint,
+                const geometry_msgs::PoseStamped& orig_goal,
+                geometry_msgs::PoseStamped& new_goal);
 
 };
 #endif

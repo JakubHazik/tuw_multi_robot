@@ -125,8 +125,8 @@ TEST(GoalFinder, isGoalAttainable)
 
     ASSERT_EQ(true, gf.isGoalAttainable(goal));
 
-    // Rotate of 90deg and the footprint will be inside a lethal region
-    yaw = M_PI/2;
+    // Rotate of 90 deg and the footprint will be inside a lethal region
+    yaw = M_PI_2;
     goal.pose.orientation.x = 0;
     goal.pose.orientation.y = 0;
     goal.pose.orientation.z = sin(yaw/2);
@@ -224,12 +224,14 @@ TEST(GoalFinder, findNewGoal)
     {
         // new goal should be equal to prev goal
 
-        ASSERT_EQ(0, diff.position.x);
-        ASSERT_EQ(0, diff.position.y);
-        ASSERT_EQ(0, diff.orientation.x);
-        ASSERT_EQ(0, diff.orientation.y);
-        ASSERT_EQ(0, diff.orientation.z);
-        ASSERT_EQ(1, diff.orientation.w);
+        double prev = occupancyGrid.info.resolution;
+        ASSERT_NEAR(0, diff.position.x, prev);
+        ASSERT_NEAR(0, diff.position.x, prev);
+        ASSERT_NEAR(0, diff.position.y, prev);
+        ASSERT_NEAR(0, diff.orientation.x, prev);
+        ASSERT_NEAR(0, diff.orientation.y, prev);
+        ASSERT_NEAR(0, diff.orientation.z, prev);
+        ASSERT_NEAR(1, diff.orientation.w, prev);
     }
     else
     {
