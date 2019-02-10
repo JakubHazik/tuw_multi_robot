@@ -110,7 +110,7 @@ bool findOptGoal(const std::string& base_link_frame_id,
 
     /* STEP 2.B: Printing options
     ****************************/
-    printeval = 1000;   /* Print-Frequency for current best solution (e.g. 1000) */
+    printeval = 0;   /* Print-Frequency for current best solution (e.g. 1000) */
     save2file = 0;      /* Save SCREEN and SOLUTION to TXT-files [ 0=NO/ 1=YES]  */
 
     /*****************************************************************/
