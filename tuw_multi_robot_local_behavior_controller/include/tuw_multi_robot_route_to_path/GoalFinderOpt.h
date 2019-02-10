@@ -36,14 +36,16 @@
 #include "geometry_msgs/PoseStamped.h"
 
 namespace gm = grid_map;
+using namespace goal_finder;
 
-namespace goal_finder
+namespace goal_finder_opt
 {
 
-int findOptGoal(const gm::GridMap& grid_map,
-                const gm::Polygon& footprint,
+bool findOptGoal(const std::string& base_link_frame_id,
+                const tf::TransformListener& tf_listener,
+                const gm::GridMap& grid_map,
+                const geometry_msgs::PolygonStamped& footprint,
                 const geometry_msgs::PoseStamped& orig_goal,
                 geometry_msgs::PoseStamped& new_goal);
-
 };
 #endif

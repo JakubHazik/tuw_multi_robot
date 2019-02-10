@@ -39,6 +39,7 @@
 #include "nav_msgs/OccupancyGrid.h"
 #include "map_msgs/OccupancyGridUpdate.h"
 #include <tf/transform_listener.h>
+#include <pose_cov_ops/pose_cov_ops.h>
 
 // using namespace grid_map;
 namespace gm = grid_map;
@@ -56,6 +57,12 @@ public:
     void transformFootprint(const geometry_msgs::PoseStamped&,
                             const geometry_msgs::PolygonStamped&,
                             gm::Polygon&);
+
+    inline static void transformFootprint(const std::string&,
+                                   const tf::TransformListener&,
+                                   const geometry_msgs::PoseStamped&,
+                                   const geometry_msgs::PolygonStamped&,
+                                   gm::Polygon&);
 
     void setCostmap(const nav_msgs::OccupancyGrid& cmap) { costmapCallback(cmap); } ;
     void setFootprint(const geometry_msgs::PolygonStamped& footprint) { footprintCallback(footprint); } ;
@@ -92,6 +99,75 @@ private:
 };
 
 typedef std::shared_ptr<goal_finder::GoalFinder> GoalFinderPtr;
+
+void GoalFinder::transformFootprint(const std::string& base_link_frame_id,
+                                    const tf::TransformListener& tf_listener,
+                                    const geometry_msgs::PoseStamped& goal,
+                                    const geometry_msgs::PolygonStamped& footprint,
+                                    gm::Polygon& footprint_out)
+{
+    // Compute the polygon reprensenting the footprint of the robot at the
+    // goal pose
+    gm::Polygon gm_footprint;
+    gm_footprint.setFrameId(goal.header.frame_id);
+
+    // Verify that footprint polygon is expressed in the base_link frame
+    std::string fp_frame = footprint.header.frame_id;
+    if (fp_frame != base_link_frame_id)
+    {
+        if(tf_listener.waitForTransform(fp_frame,
+                                        base_link_frame_id,
+                                        ros::Time(0),
+                                        ros::Duration(1.0)))
+        {
+            geometry_msgs::PointStamped point;
+            point.header.frame_id = footprint.header.frame_id;
+            for (const auto& vertex : footprint.polygon.points)
+            {
+                point.point.x = vertex.x;
+                point.point.y = vertex.y;
+                point.point.z = vertex.z;
+                geometry_msgs::PointStamped point_at_base_link;
+                geometry_msgs::Pose pose_at_goal;
+                tf_listener.transformPoint(base_link_frame_id, point, point_at_base_link);
+                geometry_msgs::Pose pose_at_base_link;
+                pose_at_base_link.position = point_at_base_link.point;
+                pose_at_base_link.orientation.x = 0;
+                pose_at_base_link.orientation.y = 0;
+                pose_at_base_link.orientation.z = 0;
+                pose_at_base_link.orientation.w = 1;
+                pose_cov_ops::compose(goal.pose, pose_at_base_link, pose_at_goal);
+                gm_footprint.addVertex(gm::Position(pose_at_goal.position.x,  pose_at_goal.position.y));
+            }
+
+        }
+        else
+        {
+            ROS_ERROR("Goal Finder: transform between %s and %s is not available",
+                      base_link_frame_id.c_str(), fp_frame.c_str());
+            throw;
+        }
+    }
+    else
+    {
+        geometry_msgs::Pose pose;
+        for (const auto& vertex : footprint.polygon.points)
+        {
+            pose.position.x = vertex.x;
+            pose.position.y = vertex.y;
+            pose.position.z = vertex.z;
+            pose.orientation.x = 0;
+            pose.orientation.y = 0;
+            pose.orientation.z = 0;
+            pose.orientation.w = 1;
+            geometry_msgs::Pose pose_at_goal;
+            pose_cov_ops::compose(goal.pose, pose, pose_at_goal);
+            // pose_cov_ops::compose(goal, point_at_base_link, point_at_goal);
+            gm_footprint.addVertex(gm::Position(pose_at_goal.position.x,  pose_at_goal.position.y));
+        }
+    }
+    footprint_out = gm_footprint;
+};
 
 };
 #endif

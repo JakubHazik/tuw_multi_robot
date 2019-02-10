@@ -37,121 +37,122 @@
 #include "grid_map_core/GridMap.hpp"
 #include "grid_map_ros/grid_map_ros.hpp"
 #include <pose_cov_ops/pose_cov_ops.h>
+#include <tf/tf.h>
 
 namespace gm = grid_map;
 
-TEST(GoalFinder, isGoalAttainable)
-{
-    goal_finder::GoalFinder gf;
-    std::srand(std::time(nullptr)); // use current time as seed for random generator
-
-    // Create goal
-    geometry_msgs::PoseStamped goal;
-    goal.header.frame_id = "map";
-    // goal position will be well outside the grid map, at first
-    goal.pose.position.x = 1000;
-    goal.pose.position.y = 1000;
-    goal.pose.position.z = 0;
-    // random goal orientation (rotation around z)
-    double yaw = (std::rand()/((RAND_MAX + 1u)/361)) /    M_PI*180;
-    goal.pose.orientation.x = 0;
-    goal.pose.orientation.y = 0;
-    goal.pose.orientation.z = sin(yaw/2);
-    goal.pose.orientation.w = cos(yaw/2);
-
-    // If no footprint nor costmap are set Goal Finder should consider the goal attainable
-    ASSERT_EQ(true, gf.isGoalAttainable(goal));
-
-    // Create occupancy grid
-    nav_msgs::OccupancyGrid occupancyGrid;
-    occupancyGrid.header.stamp = ros::Time(5.0);
-    occupancyGrid.header.frame_id = "map";
-    occupancyGrid.info.resolution = 0.01;
-    occupancyGrid.info.width = 200;
-    occupancyGrid.info.height = 200;
-    occupancyGrid.info.origin.position.x = 0.0;
-    occupancyGrid.info.origin.position.y = 0.0;
-    occupancyGrid.info.origin.orientation.w = 1.0;
-    occupancyGrid.data.resize(occupancyGrid.info.width * occupancyGrid.info.height);
-
-    // Costmap of only lethal costs
-    for (auto& cell : occupancyGrid.data)
-    {
-        // cell = std::rand() % 102 - 1; // [-1, 100]
-        cell = 100.; // [-1, 100]
-    }
-
-    // Create footprint (rectangle 1.6 x 0.4)
-    geometry_msgs::PolygonStamped footprint;
-    footprint.header.frame_id = "base_link";
-    geometry_msgs::Point32 pointA, pointB, pointC, pointD;
-    pointA.x =  0.8;
-    pointA.y =  0.2;
-    pointA.z =  0.0;
-    footprint.polygon.points.push_back(pointA);
-    pointB.x =  0.8;
-    pointB.y = -0.2;
-    pointB.z =  0.0;
-    footprint.polygon.points.push_back(pointB);
-    pointC.x = -0.8;
-    pointC.y = -0.2;
-    pointC.z =  0.0;
-    footprint.polygon.points.push_back(pointC);
-    pointD.x = -0.8;
-    pointD.y =  0.2;
-    pointD.z =  0.0;
-    footprint.polygon.points.push_back(pointD);
-
-    gf.setCostmap(occupancyGrid);
-    gf.setFootprint(footprint);
-
-    // Goal is outside the costmap, should be attainable
-    ASSERT_EQ(true, gf.isGoalAttainable(goal));
-
-    // Goal position in the middle of the costmap
-    goal.pose.position.x = occupancyGrid.info.width*occupancyGrid.info.resolution/2.+occupancyGrid.info.origin.position.x;
-    goal.pose.position.y = occupancyGrid.info.height*occupancyGrid.info.resolution/2.+occupancyGrid.info.origin.position.y;
-
-    // There will be 100s inside the footprint at goal
-    ASSERT_EQ(false, gf.isGoalAttainable(goal));
-
-    // Goal position just outside the costmap and given the dimension and orientation should be attainable
-    goal.pose.position.x = occupancyGrid.info.width*occupancyGrid.info.resolution/2.+occupancyGrid.info.origin.position.x;
-    goal.pose.position.y = occupancyGrid.info.height*occupancyGrid.info.resolution+occupancyGrid.info.origin.position.y + 0.01 + pointA.y;
-    goal.pose.orientation.x = 0;
-    goal.pose.orientation.y = 0;
-    goal.pose.orientation.z = 0;
-    goal.pose.orientation.w = 1;
-
-    ASSERT_EQ(true, gf.isGoalAttainable(goal));
-
-    // Rotate of 90 deg and the footprint will be inside a lethal region
-    yaw = M_PI_2;
-    goal.pose.orientation.x = 0;
-    goal.pose.orientation.y = 0;
-    goal.pose.orientation.z = sin(yaw/2);
-    goal.pose.orientation.w = cos(yaw/2);
-
-    ASSERT_EQ(false, gf.isGoalAttainable(goal));
-
-    // A free space costmap
-    for (auto& cell : occupancyGrid.data)
-    {
-        cell = 0.; // [-1, 100]
-    }
-    gf.setCostmap(occupancyGrid);
-
-    // Undependent from the goal pose, it should be attainable
-    ASSERT_EQ(true, gf.isGoalAttainable(goal));
-
-    // Goal position in the middle of the costmap
-    goal.pose.position.x = occupancyGrid.info.width*occupancyGrid.info.resolution/2.+occupancyGrid.info.origin.position.x;
-    goal.pose.position.y = occupancyGrid.info.height*occupancyGrid.info.resolution/2.+occupancyGrid.info.origin.position.y;
-
-    // There will be no 100s inside the footprint at goal
-    ASSERT_EQ(true, gf.isGoalAttainable(goal));
-
-}
+// TEST(GoalFinder, isGoalAttainable)
+// {
+//     goal_finder::GoalFinder gf;
+//     std::srand(std::time(nullptr)); // use current time as seed for random generator
+//
+//     // Create goal
+//     geometry_msgs::PoseStamped goal;
+//     goal.header.frame_id = "map";
+//     // goal position will be well outside the grid map, at first
+//     goal.pose.position.x = 1000;
+//     goal.pose.position.y = 1000;
+//     goal.pose.position.z = 0;
+//     // random goal orientation (rotation around z)
+//     double yaw = (std::rand()/((RAND_MAX + 1u)/361)) /    M_PI*180;
+//     goal.pose.orientation.x = 0;
+//     goal.pose.orientation.y = 0;
+//     goal.pose.orientation.z = sin(yaw/2);
+//     goal.pose.orientation.w = cos(yaw/2);
+//
+//     // If no footprint nor costmap are set Goal Finder should consider the goal attainable
+//     ASSERT_EQ(true, gf.isGoalAttainable(goal));
+//
+//     // Create occupancy grid
+//     nav_msgs::OccupancyGrid occupancyGrid;
+//     occupancyGrid.header.stamp = ros::Time(5.0);
+//     occupancyGrid.header.frame_id = "map";
+//     occupancyGrid.info.resolution = 0.01;
+//     occupancyGrid.info.width = 200;
+//     occupancyGrid.info.height = 200;
+//     occupancyGrid.info.origin.position.x = 0.0;
+//     occupancyGrid.info.origin.position.y = 0.0;
+//     occupancyGrid.info.origin.orientation.w = 1.0;
+//     occupancyGrid.data.resize(occupancyGrid.info.width * occupancyGrid.info.height);
+//
+//     // Costmap of only lethal costs
+//     for (auto& cell : occupancyGrid.data)
+//     {
+//         // cell = std::rand() % 102 - 1; // [-1, 100]
+//         cell = 100.; // [-1, 100]
+//     }
+//
+//     // Create footprint (rectangle 1.6 x 0.4)
+//     geometry_msgs::PolygonStamped footprint;
+//     footprint.header.frame_id = "base_link";
+//     geometry_msgs::Point32 pointA, pointB, pointC, pointD;
+//     pointA.x =  0.8;
+//     pointA.y =  0.2;
+//     pointA.z =  0.0;
+//     footprint.polygon.points.push_back(pointA);
+//     pointB.x =  0.8;
+//     pointB.y = -0.2;
+//     pointB.z =  0.0;
+//     footprint.polygon.points.push_back(pointB);
+//     pointC.x = -0.8;
+//     pointC.y = -0.2;
+//     pointC.z =  0.0;
+//     footprint.polygon.points.push_back(pointC);
+//     pointD.x = -0.8;
+//     pointD.y =  0.2;
+//     pointD.z =  0.0;
+//     footprint.polygon.points.push_back(pointD);
+//
+//     gf.setCostmap(occupancyGrid);
+//     gf.setFootprint(footprint);
+//
+//     // Goal is outside the costmap, should be attainable
+//     ASSERT_EQ(true, gf.isGoalAttainable(goal));
+//
+//     // Goal position in the middle of the costmap
+//     goal.pose.position.x = occupancyGrid.info.width*occupancyGrid.info.resolution/2.+occupancyGrid.info.origin.position.x;
+//     goal.pose.position.y = occupancyGrid.info.height*occupancyGrid.info.resolution/2.+occupancyGrid.info.origin.position.y;
+//
+//     // There will be 100s inside the footprint at goal
+//     ASSERT_EQ(false, gf.isGoalAttainable(goal));
+//
+//     // Goal position just outside the costmap and given the dimension and orientation should be attainable
+//     goal.pose.position.x = occupancyGrid.info.width*occupancyGrid.info.resolution/2.+occupancyGrid.info.origin.position.x;
+//     goal.pose.position.y = occupancyGrid.info.height*occupancyGrid.info.resolution+occupancyGrid.info.origin.position.y + 0.01 + pointA.y;
+//     goal.pose.orientation.x = 0;
+//     goal.pose.orientation.y = 0;
+//     goal.pose.orientation.z = 0;
+//     goal.pose.orientation.w = 1;
+//
+//     ASSERT_EQ(true, gf.isGoalAttainable(goal));
+//
+//     // Rotate of 90 deg and the footprint will be inside a lethal region
+//     yaw = M_PI_2;
+//     goal.pose.orientation.x = 0;
+//     goal.pose.orientation.y = 0;
+//     goal.pose.orientation.z = sin(yaw/2);
+//     goal.pose.orientation.w = cos(yaw/2);
+//
+//     ASSERT_EQ(false, gf.isGoalAttainable(goal));
+//
+//     // A free space costmap
+//     for (auto& cell : occupancyGrid.data)
+//     {
+//         cell = 0.; // [-1, 100]
+//     }
+//     gf.setCostmap(occupancyGrid);
+//
+//     // Undependent from the goal pose, it should be attainable
+//     ASSERT_EQ(true, gf.isGoalAttainable(goal));
+//
+//     // Goal position in the middle of the costmap
+//     goal.pose.position.x = occupancyGrid.info.width*occupancyGrid.info.resolution/2.+occupancyGrid.info.origin.position.x;
+//     goal.pose.position.y = occupancyGrid.info.height*occupancyGrid.info.resolution/2.+occupancyGrid.info.origin.position.y;
+//
+//     // There will be no 100s inside the footprint at goal
+//     ASSERT_EQ(true, gf.isGoalAttainable(goal));
+//
+// }
 
 TEST(GoalFinder, findNewGoal)
 {
@@ -159,22 +160,39 @@ TEST(GoalFinder, findNewGoal)
     std::srand(std::time(nullptr)); // use current time as seed for random generator
 
     // Create random occupancy grid
-    nav_msgs::OccupancyGrid occupancyGrid;
-    occupancyGrid.header.stamp = ros::Time(5.0);
-    occupancyGrid.header.frame_id = "map";
-    occupancyGrid.info.resolution = 0.01;
-    occupancyGrid.info.width = 200;
-    occupancyGrid.info.height = 200;
-    occupancyGrid.info.origin.position.x = 0.0;
-    occupancyGrid.info.origin.position.y = 0.0;
-    occupancyGrid.info.origin.orientation.w = 1.0;
-    occupancyGrid.data.resize(occupancyGrid.info.width * occupancyGrid.info.height);
+    // nav_msgs::OccupancyGrid occupancyGrid;
+    // occupancyGrid.header.stamp = ros::Time(5.0);
+    // occupancyGrid.header.frame_id = "map";
+    // occupancyGrid.info.resolution = 0.01;
+    // occupancyGrid.info.width = 200;
+    // occupancyGrid.info.height = 200;
+    // occupancyGrid.info.origin.position.x = 0.0;
+    // occupancyGrid.info.origin.position.y = 0.0;
+    // occupancyGrid.info.origin.orientation.w = 1.0;
+    // occupancyGrid.data.resize(occupancyGrid.info.width * occupancyGrid.info.height);
+    //
+    // for (auto& cell : occupancyGrid.data)
+    // {
+    //     // cell = std::rand() % 102 - 1; // [-1, 100]
+    //     cell = 0.; // [-1, 100]
+    // }
+    // occupancyGrid.data[(occupancyGrid.info.width * occupancyGrid.info.height - 1)/2] = 100;
+    // occupancyGrid.data[(occupancyGrid.info.width * occupancyGrid.info.height - 1)/2 -1] = 100;
+    // occupancyGrid.data[(occupancyGrid.info.width * occupancyGrid.info.height - 1)/2 +1] = 100;
 
-    for (auto& cell : occupancyGrid.data)
-    {
-        cell = std::rand() % 102 - 1; // [-1, 100]
-        // cell = 100.; // [-1, 100]
-    }
+    gm::GridMap grid({"local_costmap"});
+    grid.setFrameId("map");
+    grid.setGeometry(gm::Length(3.0, 3.0), 0.01, gm::Position(0.0, 0.0));
+    // grid["local_costmap"].setRandom();
+    grid["local_costmap"].setZero();
+    grid.atPosition("local_costmap", gm::Position(0.0, 0.0)) = 100.;
+    ROS_INFO("Created map with size %f x %f m (%i x %i cells).\n The center of the map is located at (%f, %f) in the %s frame.",
+             grid.getLength().x(), grid.getLength().y(),
+             grid.getSize() (0), grid.getSize() (1),
+             grid.getPosition().x(), grid.getPosition().y(), grid.getFrameId().c_str());
+
+    nav_msgs::OccupancyGrid occupancyGrid;
+    gm::GridMapRosConverter::toOccupancyGrid(grid, "local_costmap", -1.0, 100.0, occupancyGrid);
 
     // Create footprint (rectangle 1.6 x 0.4)
     geometry_msgs::PolygonStamped footprint;
@@ -204,8 +222,10 @@ TEST(GoalFinder, findNewGoal)
     geometry_msgs::PoseStamped goal;
     goal.header.frame_id = "map";
     // goal position in the middle of the costmap
-    goal.pose.position.x = occupancyGrid.info.width*occupancyGrid.info.resolution/2.+occupancyGrid.info.origin.position.x;
-    goal.pose.position.y = occupancyGrid.info.height*occupancyGrid.info.resolution/2.+occupancyGrid.info.origin.position.y;
+    // goal.pose.position.x = occupancyGrid.info.width*occupancyGrid.info.resolution/2.+occupancyGrid.info.origin.position.x;
+    goal.pose.position.x = 0;
+    // goal.pose.position.y = occupancyGrid.info.height*occupancyGrid.info.resolution/2.+occupancyGrid.info.origin.position.y;
+    goal.pose.position.y = 0;
     goal.pose.position.z = 0;
     // random goal orientation (rotation around z)
     double yaw = (std::rand()/((RAND_MAX + 1u)/361)) / M_PI*180;
@@ -213,9 +233,13 @@ TEST(GoalFinder, findNewGoal)
     goal.pose.orientation.y = 0;
     goal.pose.orientation.z = sin(yaw/2);
     goal.pose.orientation.w = cos(yaw/2);
+    ROS_INFO("Original goal (%f, %f, %f)", goal.pose.position.x, goal.pose.position.y, tf::getYaw(goal.pose.orientation));
+
+    ASSERT_EQ(false, gf.isGoalAttainable(goal));
 
     geometry_msgs::PoseStamped new_goal;
     bool found = gf.findNewGoal(goal, new_goal);
+    ROS_INFO("New goal (%f, %f, %f)", new_goal.pose.position.x, new_goal.pose.position.y, tf::getYaw(new_goal.pose.orientation));
 
     geometry_msgs::Pose diff;
     pose_cov_ops::inverseCompose(goal.pose, new_goal.pose, diff);
@@ -223,15 +247,15 @@ TEST(GoalFinder, findNewGoal)
     if (gf.isGoalAttainable(goal) || !found)
     {
         // new goal should be equal to prev goal
-
-        double prev = occupancyGrid.info.resolution;
-        ASSERT_NEAR(0, diff.position.x, prev);
-        ASSERT_NEAR(0, diff.position.x, prev);
-        ASSERT_NEAR(0, diff.position.y, prev);
-        ASSERT_NEAR(0, diff.orientation.x, prev);
-        ASSERT_NEAR(0, diff.orientation.y, prev);
-        ASSERT_NEAR(0, diff.orientation.z, prev);
-        ASSERT_NEAR(1, diff.orientation.w, prev);
+        double pres_position = occupancyGrid.info.resolution;
+        double pres_orientation = 1e-5;
+        ASSERT_NEAR(0, diff.position.x, pres_position);
+        ASSERT_NEAR(0, diff.position.x, pres_position);
+        ASSERT_NEAR(0, diff.position.y, pres_position);
+        ASSERT_NEAR(0, diff.orientation.x, pres_orientation);
+        ASSERT_NEAR(0, diff.orientation.y, pres_orientation);
+        ASSERT_NEAR(0, diff.orientation.z, pres_orientation);
+        ASSERT_NEAR(1, diff.orientation.w, pres_orientation);
     }
     else
     {

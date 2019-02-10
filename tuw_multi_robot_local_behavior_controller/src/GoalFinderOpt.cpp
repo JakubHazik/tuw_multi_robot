@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include "tuw_multi_robot_route_to_path/GoalFinder.h"
 #include "tuw_multi_robot_route_to_path/GoalFinderOpt.h"
 #include <limits>
 #include <tf/tf.h>
@@ -8,7 +9,7 @@
 
 #define _USE_MATH_DEFINES
 
-namespace goal_finder
+namespace goal_finder_opt
 {
 
 template <typename R>
@@ -33,8 +34,10 @@ extern "C" { int midaco_print(int,long int,long int,long int*,long int*,double*,
                               long int,long int,long int,double*,double*,
                               long int,long int,double*,long int,char*); }
 
-int findOptGoal(const gm::GridMap& grid_map,
-                const gm::Polygon& footprint,
+bool findOptGoal(const std::string& base_link_frame_id,
+                const tf::TransformListener& tf_listener,
+                const gm::GridMap& grid_map,
+                const geometry_msgs::PolygonStamped& footprint,
                 const geometry_msgs::PoseStamped& orig_goal,
                 geometry_msgs::PoseStamped& new_goal)
 {
@@ -77,8 +80,8 @@ int findOptGoal(const gm::GridMap& grid_map,
     xl[1] = 0;
     xl[2] = 0;
     xu[0] = M_PI;
-    xu[1] = grid_map.getSize()(0) - 1;
-    xu[2] = grid_map.getSize()(1) - 1;
+    xu[1] = grid_map.getSize() (0) - 1;
+    xu[2] = grid_map.getSize() (1) - 1;
 
     // std::cout << "UBOX 0:\n" << xu[0] << std::endl;
     // std::cout << "UBOX 1:\n" << xu[1] << std::endl;
@@ -143,8 +146,45 @@ int findOptGoal(const gm::GridMap& grid_map,
 
     while(istop == 0)   /*~~~ Start of the reverse communication loop ~~~*/
     {
-        /* Evaluate objective function */
-        problem_function( &*f, &*g, &*x, grid_map, orig_goal);
+        // problem_function( &*f, &*g, &*x, grid_map, orig_goal);
+
+        /* Objective functions F(X) */
+        geometry_msgs::PoseStamped candidate_goal;
+        gm::Position candidate_position;
+        geometry_msgs::Pose diff;
+        grid_map.getPosition(gm::Index(x[1], x[2]), candidate_position);
+        candidate_goal.pose.position.x = candidate_position.x();
+        candidate_goal.pose.position.y = candidate_position.y();
+        candidate_goal.pose.orientation.x = 0;
+        candidate_goal.pose.orientation.y = 0;
+        candidate_goal.pose.orientation.z = sin(x[0]/2.);
+        candidate_goal.pose.orientation.w = cos(x[0]/2.);
+
+        pose_cov_ops::inverseCompose(candidate_goal.pose, orig_goal.pose, diff);
+
+        f[0] = sqrt(diff.position.x*diff.position.x + diff.position.y*diff.position.y);
+        f[1] = wrapScalarToPi(tf::getYaw(diff.orientation));
+        f[1] *= f[1];
+
+        /* Constraints functions G(X) */
+        gm::Polygon transf_footprint;
+        GoalFinder::transformFootprint(base_link_frame_id,
+                                       tf_listener,
+                                       candidate_goal,
+                                       footprint,
+                                       transf_footprint);
+
+        // g[0] = 0;
+        int lethal_counts = 0;
+        for (gm::PolygonIterator iterator(grid_map, transf_footprint);
+             !iterator.isPastEnd(); ++iterator)
+        {
+            if (grid_map.at("local_costmap", *iterator) == 100)
+            {
+                lethal_counts++;
+            }
+        }
+        g[0] = lethal_counts;
 
         /* Call MIDACO */
         midaco(&p,&o,&n,&ni,&m,&me,&*x,&*f,&*g,&*xl,&*xu,&iflag,
@@ -160,7 +200,7 @@ int findOptGoal(const gm::GridMap& grid_map,
     /*****************************************************************/
     // printf("\n Pause"); getchar();
 
-    // geometry_msgs::Pose new_pose;
+    geometry_msgs::Pose new_pose;
     gm::Position new_position;
     grid_map.getPosition(gm::Index(x[1], x[2]), new_position);
     new_goal.pose.position.x = new_position.x();
@@ -170,31 +210,32 @@ int findOptGoal(const gm::GridMap& grid_map,
     new_goal.pose.orientation.z = sin(x[0]/2.);
     new_goal.pose.orientation.w = cos(x[0]/2.);
 
-    return 0;
+    // solution_idx = gm::Index(x[1], x[2]);
+    // pos = gm::Index(x[1], x[2]);
+
+    // geometry_msgs::Pose solution_pose;
+    // gm::Position solution_position;
+    // geometry_msgs::Pose diff;
+    // grid_map.getPosition(gm::Index(x[1], x[2]), solution_position);
+    // solution_pose.position.x = solution_position.x();
+    // solution_pose.position.y = solution_position.y();
+    // solution_pose.orientation.x = 0;
+    // solution_pose.orientation.y = 0;
+    // solution_pose.orientation.z = sin(x[0]/2.);
+    // solution_pose.orientation.w = cos(x[0]/2.);
+    //
+    // pose_cov_ops::inverseCompose(solution_pose, orig_goal.pose, diff);
+    //
+    // if (sqrt(diff.position.x*diff.position.x + diff.position.y*diff.position.y) <= )
+    // f[0] = sqrt(diff.position.x*diff.position.x + diff.position.y*diff.position.y);
+    // f[1] = abs(wrapScalarToPi(tf::getYaw(diff.orientation)));
+
+    return true;
 }
 
-void problem_function( double *f, double *g, double *x, const gm::GridMap& grid_map, const geometry_msgs::PoseStamped& orig_goal)
-{
-    /* Objective functions F(X) */
-
-    geometry_msgs::Pose candidate_pose;
-    geometry_msgs::Pose diff;
-    gm::Position candidate_position;
-    grid_map.getPosition(gm::Index(x[1], x[2]), candidate_position);
-    candidate_pose.position.x = candidate_position.x();
-    candidate_pose.position.y = candidate_position.y();
-    candidate_pose.orientation.x = 0;
-    candidate_pose.orientation.y = 0;
-    candidate_pose.orientation.z = sin(x[0]/2.);
-    candidate_pose.orientation.w = cos(x[0]/2.);
-
-    pose_cov_ops::inverseCompose(candidate_pose, orig_goal.pose, diff);
-
-    f[0] = sqrt(diff.position.x*diff.position.x + diff.position.y*diff.position.y);
-    f[1] = abs(wrapScalarToPi(tf::getYaw(diff.orientation)));
-
-    // TOOD
-    g[0] = 0;
-}
+// void problem_function( double *f, double *g, double *x, const gm::GridMap& grid_map, const geometry_msgs::PoseStamped& orig_goal)
+// {
+/* Objective functions F(X) */
+// }
 
 }

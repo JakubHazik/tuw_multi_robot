@@ -32,7 +32,6 @@
 #include "tuw_multi_robot_route_to_path/GoalFinderOpt.h"
 #include "tf/transform_listener.h"
 #include "grid_map_ros/GridMapRosConverter.hpp"
-#include <pose_cov_ops/pose_cov_ops.h>
 #include "tuw_multi_robot_route_to_path/GoalFinderOpt.h"
 
 namespace goal_finder {
@@ -60,74 +59,19 @@ GoalFinder::GoalFinder()
 //     current_goal_ = current_goal;
 // }
 
-GoalFinder::~GoalFinder(){
+GoalFinder::~GoalFinder()
+{
 }
 
 void GoalFinder::transformFootprint(const geometry_msgs::PoseStamped& goal,
                                     const geometry_msgs::PolygonStamped& footprint,
                                     gm::Polygon& footprint_out)
 {
-    // Compute the polygon reprensenting the footprint of the robot at the
-    // goal pose
-    gm::Polygon gm_footprint;
-    gm_footprint.setFrameId(goal.header.frame_id);
-
-    // Verify that footprint polygon is expressed in the base_link frame
-    std::string fp_frame = footprint.header.frame_id;
-    if (fp_frame != base_link_frame_id_)
-    {
-        if(tf_listener_.waitForTransform(fp_frame,
-                                         base_link_frame_id_,
-                                         ros::Time(0),
-                                         ros::Duration(1.0)))
-        {
-            geometry_msgs::PointStamped point;
-            point.header.frame_id = footprint.header.frame_id;
-            for (const auto& vertex : footprint.polygon.points)
-            {
-                point.point.x = vertex.x;
-                point.point.y = vertex.y;
-                point.point.z = vertex.z;
-                geometry_msgs::PointStamped point_at_base_link;
-                geometry_msgs::Pose pose_at_goal;
-                tf_listener_.transformPoint(base_link_frame_id_, point, point_at_base_link);
-                geometry_msgs::Pose pose_at_base_link;
-                pose_at_base_link.position = point_at_base_link.point;
-                pose_at_base_link.orientation.x = 0;
-                pose_at_base_link.orientation.y = 0;
-                pose_at_base_link.orientation.z = 0;
-                pose_at_base_link.orientation.w = 1;
-                pose_cov_ops::compose(goal.pose, pose_at_base_link, pose_at_goal);
-                gm_footprint.addVertex(gm::Position(pose_at_goal.position.x,  pose_at_goal.position.y));
-            }
-
-        }
-        else
-        {
-            ROS_ERROR("Goal Finder: transform between %s and %s is not available",
-                      base_link_frame_id_.c_str(), fp_frame.c_str());
-            throw;
-        }
-    }
-    else
-    {
-        geometry_msgs::Pose pose;
-        for (const auto& vertex : footprint.polygon.points)
-        {
-            pose.position.x = vertex.x;
-            pose.position.y = vertex.y;
-            pose.position.z = vertex.z;
-            pose.orientation.x = 0;
-            pose.orientation.y = 0;
-            pose.orientation.z = 0;
-            pose.orientation.w = 1;
-            geometry_msgs::Pose pose_at_goal;
-            pose_cov_ops::compose(goal.pose, pose, pose_at_goal);
-            // pose_cov_ops::compose(goal, point_at_base_link, point_at_goal);
-            gm_footprint.addVertex(gm::Position(pose_at_goal.position.x,  pose_at_goal.position.y));
-        }
-    }
-    footprint_out = gm_footprint;
+    GoalFinder::transformFootprint(base_link_frame_id_,
+                                   tf_listener_,
+                                   goal,
+                                   footprint,
+                                   footprint_out);
 }
 
 bool GoalFinder::transformFootprint(const geometry_msgs::PoseStamped& goal,
@@ -227,13 +171,16 @@ bool GoalFinder::findNewGoal(const geometry_msgs::PoseStamped& last_goal_sent,
 
     if (find_new_flag)
     {
-        if (!findOptGoal(grid_map_, gm_footprint, goal_cmap_frame, new_goal))
+        if (goal_finder_opt::findOptGoal(base_link_frame_id_, tf_listener_,
+                                         grid_map_, footprint_,
+                                         goal_cmap_frame, new_goal))
         {
-            ROS_DEBUG("Goal Finder: failed to find a new goal");
-            return false;
+            ROS_DEBUG("Goal Finder: a new goal was found");
+            return true;
         }
-        ROS_DEBUG("Goal Finder: a new goal was found");
-        return true;
+        ROS_DEBUG("Goal Finder: failed to find a new goal");
+        return false;
+
     }
     else
     {
