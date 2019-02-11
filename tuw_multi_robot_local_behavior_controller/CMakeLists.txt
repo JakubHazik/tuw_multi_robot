@@ -4,10 +4,7 @@ project(tuw_multi_robot_local_behavior_controller)
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++17)
 
-## Find catkin macros and libraries
-## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
-## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS
+set(DEPS
   geometry_msgs
   nav_msgs
   roscpp
@@ -15,6 +12,22 @@ find_package(catkin REQUIRED COMPONENTS
   tuw_geometry
   tuw_nav_msgs
   ifollow_nav_msgs
+  rospy
+  std_msgs
+  map_msgs
+  grid_map_core
+  grid_map_ros
+  actionlib_msgs
+  actionlib
+  pose_cov_ops
+  tf
+)
+
+## Find catkin macros and libraries
+## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
+## is used, also find other catkin packages
+find_package(catkin REQUIRED COMPONENTS
+  ${DEPS}
 )
 
 find_package(PkgConfig REQUIRED)
@@ -145,7 +158,7 @@ add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EX
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(${PROJECT_NAME}_node src/MultiRobotLocalBehaviorController.cpp)
-add_dependencies(${PROJECT_NAME}_node {${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
 target_link_libraries(${PROJECT_NAME}_node
   ${PROJECT_NAME}
   ${catkin_LIBRARIES}
@@ -166,12 +179,19 @@ target_link_libraries(${PROJECT_NAME}_node
 #   ${catkin_LIBRARIES}
 # )
 
-add_executable(tuw_local_behavior_controller_node src/LocalBehaviorControllerNode.cpp)
-add_dependencies(tuw_local_behavior_controller_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(tuw_local_behavior_controller_node 
+add_executable(tuw_local_behavior_controller_node src/LocalBehaviorControllerNode.cpp src/GoalFinder.cpp)
+add_dependencies(tuw_local_behavior_controller_node ${catkin_EXPORTED_TARGETS})
+target_link_libraries(tuw_local_behavior_controller_node
   ${PROJECT_NAME}
   ${catkin_LIBRARIES}
   ${LIBSSH_LIBRARIES}
+)
+
+
+add_executable(${PROJECT_NAME}_gf_test test/GoalFinderTest.cpp src/GoalFinder.cpp)
+target_link_libraries(${PROJECT_NAME}_gf_test
+  ${PROJECT_NAME}
+  ${catkin_LIBRARIES}
 )
 
 #############

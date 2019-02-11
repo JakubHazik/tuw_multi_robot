@@ -100,7 +100,7 @@ MultiRobotLocalBehaviorController::MultiRobotLocalBehaviorController(ros::NodeHa
     n_param_.param<std::string>("robotInfo_topic", topic_robot_info_, "/robot_info");
 
     n_param_.param<std::string>("frame_map", frame_map_, "map");
-    
+
     for (int i = 0; i < no_robots_; i++)
     {
         converter_.emplace_back(no_robots_, i);

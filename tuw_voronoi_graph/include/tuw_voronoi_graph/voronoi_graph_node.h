@@ -51,6 +51,7 @@ namespace tuw_graph
             bool                                    publishVoronoiMapImage_;    /// for debuging
             Eigen::Vector2d                         origin_;
             float                                   resolution_;
+            float                                   robot_width_;
             cv::Mat                                 map_;
             cv::Mat                                 distField_;
             cv::Mat                                 voronoiMap_;

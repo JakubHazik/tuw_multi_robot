@@ -65,29 +65,37 @@ int RouteProgressMonitor::getProgress () {
 }
 
 void RouteProgressMonitor::updateProgress ( const tuw::Point2D p ) {
+    // Compute distance to segment 
     for ( auto segment: segments_ ) {
         segment->distance = segment->l.distanceTo ( p );
         segment->distance = p.distanceTo(segment->l.p1());
     }
+ 
     if ( segments_.empty() ) {
         return;
     }
+
     if ( segments_.size() <= 1 ) {
         segments_[0]->state = SEGMENT_STATE_ACTIVE;
     }
+
     for ( size_t i = 0; i < segments_.size()-1; i++ ) {
         SegmentPtr curr = segments_[i];
         SegmentPtr next = segments_[i+1];
+        // If the current segment is reached
         if ( ( curr->state == SEGMENT_STATE_ACTIVE ) && ( next->state == SEGMENT_STATE_AHEAD ) ) {
             double d_curr = curr->distance;
             double d_next = next->distance;
+            // Check if robot is closer from the next segment than the current one
             if ( d_next <= d_curr) {
+                ROS_WARN("d_next : %f, d_curr : %f",d_next, d_curr);
                 curr->state = SEGMENT_STATE_INACTIVE;
                 next->state = SEGMENT_STATE_ACTIVE;
                 idx_active_segment_ = i+1;
             }
         }
     }
+
 }
 
 };
