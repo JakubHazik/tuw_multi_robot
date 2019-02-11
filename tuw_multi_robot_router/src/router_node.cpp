@@ -246,11 +246,6 @@ void Router_Node::monitorExecution() {
 
 
     ROS_INFO("Number of active robots : %d", goals_msg_.robots.size());
-   
-    if( !active_robots_.empty() ) {
-        ROS_INFO("Replanning");
-        plan();
-    } 
 
 }
 
