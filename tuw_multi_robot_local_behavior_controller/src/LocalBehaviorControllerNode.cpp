@@ -324,7 +324,7 @@ void LocalBehaviorControllerNode::verifyGoalFeasibility()
             state == actionlib::SimpleClientGoalState::REJECTED)
         {
             move_base_msgs::MoveBaseGoal newGoal;
-            goalFinder_->findNewGoal(last_goal_sent_, newGoal.target_pose);
+            goalFinder_->findNewGoal(1, last_goal_sent_, newGoal.target_pose);
             mbActionClient_->sendGoal(newGoal);
             last_goal_sent_ = newGoal.target_pose;
         }

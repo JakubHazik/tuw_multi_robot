@@ -52,8 +52,12 @@ class GoalFinder
 public:
     GoalFinder();
     ~GoalFinder();
-    bool findNewGoal(const geometry_msgs::PoseStamped&, geometry_msgs::PoseStamped&);
+    bool findNewGoal(double timeout, const geometry_msgs::PoseStamped&, geometry_msgs::PoseStamped&);
     bool isGoalAttainable(const geometry_msgs::PoseStamped&);
+
+    bool transformFootprint(const geometry_msgs::PoseStamped&,
+                            gm::Polygon&);
+
     void transformFootprint(const geometry_msgs::PoseStamped&,
                             const geometry_msgs::PolygonStamped&,
                             gm::Polygon&);
@@ -93,8 +97,6 @@ private:
     void costmapCallback(const nav_msgs::OccupancyGrid&);
     void costmapUpdateCallback(const map_msgs::OccupancyGridUpdate&);
     void footprintCallback(const geometry_msgs::PolygonStamped&);
-    bool transformFootprint(const geometry_msgs::PoseStamped&,
-                            gm::Polygon&);
 
 };
 
@@ -137,7 +139,7 @@ void GoalFinder::transformFootprint(const std::string& base_link_frame_id,
                 pose_at_base_link.orientation.z = 0;
                 pose_at_base_link.orientation.w = 1;
                 pose_cov_ops::compose(goal.pose, pose_at_base_link, pose_at_goal);
-                gm_footprint.addVertex(gm::Position(pose_at_goal.position.x,  pose_at_goal.position.y));
+                gm_footprint.addVertex(gm::Position(pose_at_goal.position.x, pose_at_goal.position.y));
             }
 
         }

@@ -41,7 +41,7 @@ using namespace goal_finder;
 namespace goal_finder_opt
 {
 
-bool findOptGoal(const std::string& base_link_frame_id,
+bool findOptGoal(int timeout, const std::string& base_link_frame_id,
                 const tf::TransformListener& tf_listener,
                 const gm::GridMap& grid_map,
                 const geometry_msgs::PolygonStamped& footprint,

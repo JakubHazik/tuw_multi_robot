@@ -370,19 +370,19 @@ TEST(GoalFinder, findNewGoal)
     std::cout.setf(std::ios::fixed, std::ios::floatfield);
 
     std::cout << "             Original goal " << FG_CYAN << "(" <<
-            std::setprecision(5) << goal.pose.position.x << ", " <<
-            goal.pose.position.y << ", " <<
-            tf::getYaw(goal.pose.orientation) << ")" << RESET << std::endl;
+        std::setprecision(5) << goal.pose.position.x << ", " <<
+        goal.pose.position.y << ", " <<
+        tf::getYaw(goal.pose.orientation) << ")" << RESET << std::endl;
 
     ASSERT_EQ(false, gf.isGoalAttainable(goal));
 
     geometry_msgs::PoseStamped new_goal;
-    bool found = gf.findNewGoal(goal, new_goal);
+    bool found = gf.findNewGoal(1.0, goal, new_goal);
 
     std::cout << "             New goal      " << FG_CYAN << "(" <<
-            std::setprecision(5) << new_goal.pose.position.x << ", " <<
-            new_goal.pose.position.y << ", " <<
-            tf::getYaw(new_goal.pose.orientation) << ")" << RESET << std::endl;
+        std::setprecision(5) << new_goal.pose.position.x << ", " <<
+        new_goal.pose.position.y << ", " <<
+        tf::getYaw(new_goal.pose.orientation) << ")" << RESET << std::endl;
 
     geometry_msgs::Pose diff;
 
@@ -390,9 +390,9 @@ TEST(GoalFinder, findNewGoal)
     pose_cov_ops::inverseCompose(new_goal.pose, goal.pose, diff);
 
     std::cout << "             Inv_comp goal " << FG_B_L_CYAN << "(" <<
-            std::setprecision(5) << diff.position.x << ", " <<
-            diff.position.y << ", " <<
-            tf::getYaw(diff.orientation) << ")" << RESET << std::endl;
+        std::setprecision(5) << diff.position.x << ", " <<
+        diff.position.y << ", " <<
+        tf::getYaw(diff.orientation) << ")" << RESET << std::endl;
 
     double dx = new_goal.pose.position.x - goal.pose.position.x;
     double dy = new_goal.pose.position.y - goal.pose.position.y;
@@ -449,7 +449,8 @@ TEST(GoalFinder, findInRandomGrid)
 
     for (auto& cell : occupancyGrid.data)
     {
-        cell = std::rand() % 102 - 1; // [-1, 100]
+        // cell = std::rand() % 102 - 1; // [-1, 100]
+        cell = (std::rand()/((RAND_MAX + 1u)/102)) - 1; // [-1, 100]
     }
 
     // Create footprint (rectangle 1.6 x 0.4)
@@ -493,18 +494,18 @@ TEST(GoalFinder, findInRandomGrid)
     std::cout.setf(std::ios::fixed, std::ios::floatfield);
 
     std::cout << "             Original goal " << FG_CYAN << "(" <<
-            std::setprecision(5) << goal.pose.position.x << ", " <<
-            goal.pose.position.y << ", " <<
-            tf::getYaw(goal.pose.orientation) << ")" << RESET << std::endl;
+        std::setprecision(5) << goal.pose.position.x << ", " <<
+        goal.pose.position.y << ", " <<
+        tf::getYaw(goal.pose.orientation) << ")" << RESET << std::endl;
 
     geometry_msgs::PoseStamped new_goal;
 
-        bool found = gf.findNewGoal(goal, new_goal);
+    bool found = gf.findNewGoal(1.0, goal, new_goal);
 
     std::cout << "             New goal      " << FG_CYAN << "(" <<
-            std::setprecision(5) << new_goal.pose.position.x << ", " <<
-            new_goal.pose.position.y << ", " <<
-            tf::getYaw(new_goal.pose.orientation) << ")" << RESET << std::endl;
+        std::setprecision(5) << new_goal.pose.position.x << ", " <<
+        new_goal.pose.position.y << ", " <<
+        tf::getYaw(new_goal.pose.orientation) << ")" << RESET << std::endl;
 
     geometry_msgs::Pose diff;
 
@@ -512,9 +513,9 @@ TEST(GoalFinder, findInRandomGrid)
     pose_cov_ops::inverseCompose(new_goal.pose, goal.pose, diff);
 
     std::cout << "             Inv_comp goal " << FG_B_L_CYAN << "(" <<
-            std::setprecision(5) << diff.position.x << ", " <<
-            diff.position.y << ", " <<
-            tf::getYaw(diff.orientation) << ")" << RESET << std::endl;
+        std::setprecision(5) << diff.position.x << ", " <<
+        diff.position.y << ", " <<
+        tf::getYaw(diff.orientation) << ")" << RESET << std::endl;
 
     double dx = new_goal.pose.position.x - goal.pose.position.x;
     double dy = new_goal.pose.position.y - goal.pose.position.y;
@@ -549,6 +550,182 @@ TEST(GoalFinder, findInRandomGrid)
         ASSERT_EQ(true, diff_not_zero);
     }
 }
+
+TEST(GoalFinder, findInBiasedGrid2sec)
+{
+    goal_finder::GoalFinder gf;
+    std::srand(std::time(nullptr)); // use current time as seed for random generator
+
+    double center_x = std::rand()%201 - 100;
+    double center_y = std::rand()%201 - 100;
+
+    gm::GridMap grid({"local_costmap"});
+    grid.setFrameId("map");
+    double resolution = 0.01;
+    grid.setGeometry(gm::Length(3.0, 3.0), resolution, gm::Position(center_x, center_y));
+
+    // All lethal cells
+    grid["local_costmap"].setConstant(100);
+
+    geometry_msgs::PoseStamped solution_goal;
+    solution_goal.header.frame_id = "map";
+    // solution_goal position in the middle of the costmap
+    solution_goal.pose.position.x = center_x;
+    solution_goal.pose.position.y = center_y;
+    solution_goal.pose.position.z = 0;
+    // random solution_goal orientation (rotation around z)
+    double yaw = (std::rand()/((RAND_MAX + 1u)/361)) / M_PI*180;
+    solution_goal.pose.orientation.x = 0;
+    solution_goal.pose.orientation.y = 0;
+    solution_goal.pose.orientation.z = sin(yaw/2);
+    solution_goal.pose.orientation.w = cos(yaw/2);
+
+    std::cout << "             Solution goal " << FG_CYAN << "(" <<
+        std::setprecision(5) << solution_goal.pose.position.x << ", " <<
+        solution_goal.pose.position.y << ", " <<
+        tf::getYaw(solution_goal.pose.orientation) << ")" << RESET << std::endl;
+
+    // Create footprint (rectangle 1.6 x 0.4)
+    // HAVE TO BE ASYMETRIC OTHERWISE THERE WILL BE TWO EQUIVALENT YAW SOLUTIONS
+    geometry_msgs::PolygonStamped footprint;
+    footprint.header.frame_id = "base_link";
+    geometry_msgs::Point32 pointA, pointB, pointC, pointD;
+    pointA.x =  0.8;
+    pointA.y =  0.2;
+    pointA.z =  0.0;
+    footprint.polygon.points.push_back(pointA);
+    pointB.x =  0.8;
+    pointB.y = -0.2;
+    pointB.z =  0.0;
+    footprint.polygon.points.push_back(pointB);
+    pointC.x = -0.8;
+    pointC.y = -0.2;
+    pointC.z =  0.0;
+    footprint.polygon.points.push_back(pointC);
+    pointD.x = -0.8;
+    pointD.y =  0.2;
+    pointD.z =  0.0;
+    footprint.polygon.points.push_back(pointD);
+
+    gf.setFootprint(footprint);
+
+    // Clear grid using the solution position and the footprint
+    gm::Polygon transf_footprint;
+    gf.transformFootprint(solution_goal, transf_footprint);
+
+    transf_footprint.offsetInward(-resolution);
+
+    for (gm::PolygonIterator iterator(grid, transf_footprint);
+         !iterator.isPastEnd(); ++iterator)
+    {
+        grid.at("local_costmap", *iterator) = 0;
+    }
+
+    nav_msgs::OccupancyGrid occupancyGrid;
+    gm::GridMapRosConverter::toOccupancyGrid(grid, "local_costmap", -1.0, 100.0, occupancyGrid);
+    // std::cout << occupancyGrid.header.stamp << std::endl;
+    // std::cout << occupancyGrid.header.frame_id << std::endl;
+
+    gf.setCostmap(occupancyGrid);
+
+    // Create initial goal
+    geometry_msgs::PoseStamped init_goal;
+    init_goal.header.frame_id = "map";
+    // init_goal position somewhere not very far from the solution goal
+    init_goal.pose.position.x = center_x + (std::rand()%201 - 100)/150.;
+    init_goal.pose.position.y = center_y + (std::rand()%201 - 100)/150.;
+    init_goal.pose.position.z = 0;
+    // random init_goal orientation (rotation around z)
+    yaw = (std::rand()/((RAND_MAX + 1u)/361)) / M_PI*180;
+    init_goal.pose.orientation.x = 0;
+    init_goal.pose.orientation.y = 0;
+    init_goal.pose.orientation.z = sin(yaw/2);
+    init_goal.pose.orientation.w = cos(yaw/2);
+
+    std::cout.setf(std::ios::fixed, std::ios::floatfield);
+
+    std::cout << "             Original goal " << FG_CYAN << "(" <<
+        std::setprecision(5) << init_goal.pose.position.x << ", " <<
+        init_goal.pose.position.y << ", " <<
+        tf::getYaw(init_goal.pose.orientation) << ")" << RESET << std::endl;
+
+    geometry_msgs::PoseStamped opt_goal;
+
+    bool found = gf.findNewGoal(2.0, init_goal, opt_goal);
+    // bool found = true;
+    // opt_goal = solution_goal;
+
+    std::cout << "             New goal      " << FG_CYAN << "(" <<
+        std::setprecision(5) << opt_goal.pose.position.x << ", " <<
+        opt_goal.pose.position.y << ", " <<
+        tf::getYaw(opt_goal.pose.orientation) << ")" << RESET << std::endl;
+
+    geometry_msgs::Pose diff;
+
+    // new goal "as seen from" original goal
+    pose_cov_ops::inverseCompose(opt_goal.pose, init_goal.pose, diff);
+
+    std::cout << "             Inv_comp goal " << FG_B_L_CYAN << "(" <<
+        std::setprecision(5) << diff.position.x << ", " <<
+        diff.position.y << ", " <<
+        tf::getYaw(diff.orientation) << ")" << RESET << std::endl;
+
+    double dx = opt_goal.pose.position.x - init_goal.pose.position.x;
+    double dy = opt_goal.pose.position.y - init_goal.pose.position.y;
+    double dist = sqrt(dx*dx + dy*dy);
+    double diff_norm = sqrt(diff.position.x*diff.position.x +
+                            diff.position.y*diff.position.y);
+
+    EXPECT_FLOAT_EQ(dist, diff_norm);
+
+    if (gf.isGoalAttainable(init_goal) || !found)
+    {
+        // new goal should be equal to prev goal
+        double pres_position = occupancyGrid.info.resolution*2;
+        double pres_orientation = 1e-5;
+        ASSERT_NEAR(0, diff.position.x, pres_position);
+        ASSERT_NEAR(0, diff.position.x, pres_position);
+        ASSERT_NEAR(0, diff.position.y, pres_position);
+        ASSERT_NEAR(0, diff.orientation.x, pres_orientation);
+        ASSERT_NEAR(0, diff.orientation.y, pres_orientation);
+        ASSERT_NEAR(0, diff.orientation.z, pres_orientation);
+        ASSERT_NEAR(1, diff.orientation.w, pres_orientation);
+    }
+    else
+    {
+        // new goal should be different from prev goal
+        bool diff_not_zero = diff.position.x != 0. ||
+                             diff.position.y != 0. ||
+                             diff.orientation.x != 0. ||
+                             diff.orientation.y != 0. ||
+                             diff.orientation.z != 0. ||
+                             diff.orientation.w != 1.;
+        ASSERT_EQ(true, diff_not_zero);
+    }
+
+    // Compare true solution and optimal solution
+
+    // opt goal "as seen from" solution goal
+    pose_cov_ops::inverseCompose(opt_goal.pose, solution_goal.pose, diff);
+
+    std::cout << "             Opt and sol d " << FG_B_L_CYAN << "(" <<
+        std::setprecision(5) << diff.position.x << ", " <<
+        diff.position.y << ", " <<
+        tf::getYaw(diff.orientation) << ")" << RESET << std::endl;
+
+    // opt goal should be near the solution goal that produced the grid
+    double pres_position = occupancyGrid.info.resolution*4;
+    double pres_orientation = 1e-2;
+    ASSERT_NEAR(0, diff.position.x, pres_position);
+    ASSERT_NEAR(0, diff.position.x, pres_position);
+    ASSERT_NEAR(0, diff.position.y, pres_position);
+    ASSERT_NEAR(0, diff.orientation.x, pres_orientation);
+    ASSERT_NEAR(0, diff.orientation.y, pres_orientation);
+    bool yaw_ok = (diff.orientation.z < pres_orientation && diff.orientation.w - 1 < pres_orientation) ||
+        (std::abs(diff.orientation.z - 1) < pres_orientation && diff.orientation.w < pres_orientation);
+    ASSERT_EQ(true, yaw_ok);
+}
+
 
 int main(int argc, char **argv) {
     ros::init(argc, argv, "goal_finder_test");

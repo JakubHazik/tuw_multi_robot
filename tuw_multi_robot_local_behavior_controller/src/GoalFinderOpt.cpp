@@ -22,7 +22,7 @@ R wrapScalarToPi(R angle)
     return angle;
 };
 
-void problem_function( double *f, double *g, double *x, const gm::GridMap& grid_map, const geometry_msgs::PoseStamped& orig_goal);
+void problem_function(double *f, double *g, double *x, const gm::GridMap& grid_map, const geometry_msgs::PoseStamped& orig_goal);
 
 extern "C" { int midaco(long int*,long int*,long int*,long int*,long int*,
                         long int*,double*,double*,double*,double*,double*,
@@ -34,12 +34,13 @@ extern "C" { int midaco_print(int,long int,long int,long int*,long int*,double*,
                               long int,long int,long int,double*,double*,
                               long int,long int,double*,long int,char*); }
 
-bool findOptGoal(const std::string& base_link_frame_id,
-                const tf::TransformListener& tf_listener,
-                const gm::GridMap& grid_map,
-                const geometry_msgs::PolygonStamped& footprint,
-                const geometry_msgs::PoseStamped& orig_goal,
-                geometry_msgs::PoseStamped& new_goal)
+bool findOptGoal(int timeout,
+                 const std::string& base_link_frame_id,
+                 const tf::TransformListener& tf_listener,
+                 const gm::GridMap& grid_map,
+                 const geometry_msgs::PolygonStamped& footprint,
+                 const geometry_msgs::PoseStamped& orig_goal,
+                 geometry_msgs::PoseStamped& new_goal)
 {
     /*****************************************************************/
     /***  Step 1: Problem definition  ********************************/
@@ -71,17 +72,25 @@ bool findOptGoal(const std::string& base_link_frame_id,
 
     /* STEP 1.B: Lower and upper bounds 'xl' & 'xu'
     **********************************************/
-    int max_x = grid_map.getLength().x();
-    int max_y = grid_map.getLength().y();
-    // TODO
-    // begin at 0 + (smaller dim of footprint /2 /resolution)
-    // finish at lenght - 1 - (smaller dim of footprint /2 /resolution)
+    // int max_x = grid_map.getLength().x();
+    // int max_y = grid_map.getLength().y();
+
+    double most_dist_vertex_norm = 0;
+    for (const auto& vertex : footprint.polygon.points)
+    {
+        double norm = sqrt(vertex.x*vertex.x + vertex.y*vertex.y);
+        if (norm > most_dist_vertex_norm)
+        {
+            most_dist_vertex_norm = norm;
+        }
+    }
+    double offset = ceil(most_dist_vertex_norm / grid_map.getResolution());
     xl[0] = -M_PI + std::numeric_limits<double>::epsilon();
-    xl[1] = 0;
-    xl[2] = 0;
+    xl[1] = offset;
+    xl[2] = offset;
     xu[0] = M_PI;
-    xu[1] = grid_map.getSize() (0) - 1;
-    xu[2] = grid_map.getSize() (1) - 1;
+    xu[1] = grid_map.getSize() (0) - offset;
+    xu[2] = grid_map.getSize() (1) - offset;
 
     // std::cout << "UBOX 0:\n" << xu[0] << std::endl;
     // std::cout << "UBOX 1:\n" << xu[1] << std::endl;
@@ -91,7 +100,9 @@ bool findOptGoal(const std::string& base_link_frame_id,
     ******************************/
     gm::Index goal_idx;
     grid_map.getIndex(gm::Position(orig_goal.pose.position.x, orig_goal.pose.position.y), goal_idx);
-    x[0] = wrapScalarToPi(tf::getYaw(orig_goal.pose.orientation));
+    // x[0] = wrapScalarToPi(tf::getYaw(orig_goal.pose.orientation));
+    double orig_yaw = wrapScalarToPi(tf::getYaw(orig_goal.pose.orientation));
+    x[0] = 0.0;
     x[1] = goal_idx.x();
     x[2] = goal_idx.y();
 
@@ -106,7 +117,7 @@ bool findOptGoal(const std::string& base_link_frame_id,
     /* STEP 2.A: Stopping criteria
     *****************************/
     maxeval = 10000;      /* Maximum number of function evaluation (e.g. 1000000)  */
-    maxtime = 1;   /* Maximum time limit in Seconds (e.g. 1 Day = 60*60*24) */
+    maxtime = timeout;   /* Maximum time limit in Seconds (e.g. 1 Day = 60*60*24) */
 
     /* STEP 2.B: Printing options
     ****************************/
@@ -137,12 +148,30 @@ bool findOptGoal(const std::string& base_link_frame_id,
      */
     /*****************************************************************/
     /* Workspace length calculation */
-    lrw=sizeof(rw)/sizeof(double);
-    lpf=sizeof(pf)/sizeof(double);
-    liw=sizeof(iw)/sizeof(long int);
+    lrw = sizeof(rw)/sizeof(double);
+    lpf = sizeof(pf)/sizeof(double);
+    liw = sizeof(iw)/sizeof(long int);
     /* Print midaco headline and basic information */
     midaco_print(1,printeval,save2file,&iflag,&istop,&*f,&*g,&*x,&*xl,&*xu,
                  o,n,ni,m,me,&*rw,&*pf,maxeval,maxtime,&*param,p,&*key);
+
+
+    gm::Polygon transf_footprint;
+    GoalFinder::transformFootprint(base_link_frame_id,
+                                   tf_listener,
+                                   orig_goal,
+                                   footprint,
+                                   transf_footprint);
+    int lethal_counts = 0;
+    for (gm::PolygonIterator iterator(grid_map, transf_footprint);
+         !iterator.isPastEnd(); ++iterator)
+    {
+        if (grid_map.at("local_costmap", *iterator) == 100 || grid_map.at("local_costmap", *iterator) == -1)
+        {
+            lethal_counts++;
+        }
+    }
+    printf(" Initial g[0] = %d\n", lethal_counts);
 
     while(istop == 0)   /*~~~ Start of the reverse communication loop ~~~*/
     {
@@ -157,14 +186,14 @@ bool findOptGoal(const std::string& base_link_frame_id,
         candidate_goal.pose.position.y = candidate_position.y();
         candidate_goal.pose.orientation.x = 0;
         candidate_goal.pose.orientation.y = 0;
-        candidate_goal.pose.orientation.z = sin(x[0]/2.);
-        candidate_goal.pose.orientation.w = cos(x[0]/2.);
+        candidate_goal.pose.orientation.z = sin((x[0]+orig_yaw)/2.);
+        candidate_goal.pose.orientation.w = cos((x[0]+orig_yaw)/2.);
 
         pose_cov_ops::inverseCompose(candidate_goal.pose, orig_goal.pose, diff);
 
         f[0] = sqrt(diff.position.x*diff.position.x + diff.position.y*diff.position.y);
-        f[1] = wrapScalarToPi(tf::getYaw(diff.orientation));
-        f[1] *= f[1];
+        f[1] = wrapScalarToPi(x[0]);
+        f[1] = f[1]*f[1];
 
         /* Constraints functions G(X) */
         gm::Polygon transf_footprint;
@@ -179,7 +208,7 @@ bool findOptGoal(const std::string& base_link_frame_id,
         for (gm::PolygonIterator iterator(grid_map, transf_footprint);
              !iterator.isPastEnd(); ++iterator)
         {
-            if (grid_map.at("local_costmap", *iterator) == 100)
+            if (grid_map.at("local_costmap", *iterator) == 100 || grid_map.at("local_costmap", *iterator) == -1)
             {
                 lethal_counts++;
             }
@@ -195,7 +224,7 @@ bool findOptGoal(const std::string& base_link_frame_id,
     }   /*~~~End of the reverse communication loop ~~~*/
     /*****************************************************************/
     // printf("\n Solution f[0] = %f ", f[0]);
-    // printf("\n Solution g[0] = %f ", g[0]);
+    printf(" Solution g[0] = %d\n", int(g[0]));
     // printf("\n Solution x[0] = %f ", x[0]);
     /*****************************************************************/
     // printf("\n Pause"); getchar();
@@ -207,8 +236,8 @@ bool findOptGoal(const std::string& base_link_frame_id,
     new_goal.pose.position.y = new_position.y();
     new_goal.pose.orientation.x = 0;
     new_goal.pose.orientation.y = 0;
-    new_goal.pose.orientation.z = sin(x[0]/2.);
-    new_goal.pose.orientation.w = cos(x[0]/2.);
+    new_goal.pose.orientation.z = sin((x[0]+orig_yaw)/2.);
+    new_goal.pose.orientation.w = cos((x[0]+orig_yaw)/2.);
 
     // solution_idx = gm::Index(x[1], x[2]);
     // pos = gm::Index(x[1], x[2]);
@@ -226,8 +255,7 @@ bool findOptGoal(const std::string& base_link_frame_id,
     //
     // pose_cov_ops::inverseCompose(solution_pose, orig_goal.pose, diff);
     //
-    // if (sqrt(diff.position.x*diff.position.x + diff.position.y*diff.position.y) <= )
-    // f[0] = sqrt(diff.position.x*diff.position.x + diff.position.y*diff.position.y);
+    // if (sqrt(diff.position.x*diff.position.x + diff.position.y*diff.position.y) <= ) // f[0] = sqrt(diff.position.x*diff.position.x + diff.position.y*diff.position.y);
     // f[1] = abs(wrapScalarToPi(tf::getYaw(diff.orientation)));
 
     return true;

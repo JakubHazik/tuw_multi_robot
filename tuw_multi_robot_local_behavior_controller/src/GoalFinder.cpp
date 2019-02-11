@@ -127,7 +127,8 @@ bool GoalFinder::isGoalAttainable(const geometry_msgs::PoseStamped& last_goal_se
     return attainable;
 }
 
-bool GoalFinder::findNewGoal(const geometry_msgs::PoseStamped& last_goal_sent,
+bool GoalFinder::findNewGoal(double timeout,
+                             const geometry_msgs::PoseStamped& last_goal_sent,
                              geometry_msgs::PoseStamped& new_goal)
 {
     if (!got_footprint_ || !got_costmap_)
@@ -171,7 +172,7 @@ bool GoalFinder::findNewGoal(const geometry_msgs::PoseStamped& last_goal_sent,
 
     if (find_new_flag)
     {
-        if (goal_finder_opt::findOptGoal(base_link_frame_id_, tf_listener_,
+        if (goal_finder_opt::findOptGoal(ceil(timeout), base_link_frame_id_, tf_listener_,
                                          grid_map_, footprint_,
                                          goal_cmap_frame, new_goal))
         {
