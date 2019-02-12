@@ -1,8 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(tuw_multi_robot_local_behavior_controller)
 
-## Compile as C++11, supported in ROS Kinetic and newer
-add_compile_options(-std=c++17)
+set(GCC_COVERAGE_COMPILE_FLAGS "-O3 -march=native -w") #  -Og -g -w
 
 set(DEPS
   geometry_msgs
