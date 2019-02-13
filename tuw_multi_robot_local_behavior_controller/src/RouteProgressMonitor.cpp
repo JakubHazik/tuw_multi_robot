@@ -42,6 +42,9 @@ RouteProgressMonitor::RouteProgressMonitor()
 }
 
 void RouteProgressMonitor::init ( const tuw_multi_robot_msgs::Route &route ) {
+
+    segments_.clear();
+
     for ( size_t i = 0; i < route.segments.size(); i++ ) {
         auto &seg = route.segments[i];
         SegmentPtr s = SegmentPtr ( new RouteProgressMonitor::Segment ( seg.start.position.x, seg.start.position.y, seg.end.position.x, seg.end.position.y, seg.width ) );
@@ -88,7 +91,6 @@ void RouteProgressMonitor::updateProgress ( const tuw::Point2D p ) {
             double d_next = next->distance;
             // Check if robot is closer from the next segment than the current one
             if ( d_next <= d_curr) {
-                ROS_WARN("d_next : %f, d_curr : %f",d_next, d_curr);
                 curr->state = SEGMENT_STATE_INACTIVE;
                 next->state = SEGMENT_STATE_ACTIVE;
                 idx_active_segment_ = i+1;

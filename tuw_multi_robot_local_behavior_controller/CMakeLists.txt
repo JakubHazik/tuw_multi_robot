@@ -147,6 +147,7 @@ add_library(${PROJECT_NAME}
   src/RobotRouteToPath.cpp
   src/RobotStateObserver.cpp
   src/RouteProgressMonitor.cpp
+  src/semaphore_client.cpp
 )
 
 ## Add cmake target dependencies of the library
@@ -164,6 +165,13 @@ target_link_libraries(${PROJECT_NAME}_node
   ${catkin_LIBRARIES}
 )
 
+add_executable(local_behavior_node src/local_behavior_node.cpp src/GoalFinder.cpp)
+add_dependencies(local_behavior_node ${catkin_EXPORTED_TARGETS})
+target_link_libraries(local_behavior_node
+  ${PROJECT_NAME}
+  ${catkin_LIBRARIES}
+  ${LIBSSH_LIBRARIES}
+)
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
 ## target back to the shorter version for ease of user use
