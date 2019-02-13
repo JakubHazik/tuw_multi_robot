@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+
+<launch>
+
+<arg name="room"                                default="showroom"      />
+<arg name="cfg"                                 default="showroom"   />
+<arg name="map_name"                            default=""          />
+
+<include file="$(find tuw_multi_robot_demo)/launch/stage.launch">
+  <arg name="room" value="$(arg room)" />
+</include>
+
+<!-- multi robot client -->
+<include file="$(find tuw_multi_robot_demo)/launch/multi_robot_client.launch">
+  <arg name="robot_id" value="robot_0" />
+</include> 
+
+<!-- robot_0 -->
+<!-- move_base -->
+<include file="$(find tuw_multi_robot_demo)/launch/move_base/move_base.launch">
+  <arg name="robot_id" value="robot_0" />
+</include> 
+
+<!-- multi robot router -->
+<include file="$(find tuw_multi_robot_demo)/launch/multi_robot_router.launch">
+  <arg name="room" value="showroom" />
+  <arg name="cfg" value="showroom" />
+  <arg name="map_name" value="map" />
+</include> 
+
+<!-- start rviz -->
+<include file="$(find tuw_multi_robot_demo)/launch/start_rviz.launch">
+  <arg name="room" value="$(arg room)"/> 
+</include>
+
+</launch>

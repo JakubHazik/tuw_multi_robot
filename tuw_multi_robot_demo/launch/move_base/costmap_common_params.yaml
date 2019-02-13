@@ -1,7 +1,7 @@
 transform_tolerance: 1.0 # Delay tolerable to wait for a transform [s]
 always_send_full_costmap: true
 # Inflation layer (see http://wiki.ros.org/costmap_2d/hydro/inflation)
-footprint: [[0.315, 0.7], [0.315, -0.7], [-1.405, -0.7], [-1.405, 0.7]]
+footprint: [[0.7175, 0.38], [0.7175, -0.38], [-0.7175, -0.38], [-0.7175, 0.38]]
 footprint_padding: 0.00
 
 # Obstacle layer (see http://wiki.ros.org/costmap_2d/hydro/obstacles)
