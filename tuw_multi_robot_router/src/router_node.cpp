@@ -453,7 +453,7 @@ void Router_Node::graphCallback ( const tuw_multi_robot_msgs::Graph &msg ) {
         }
 
         if ( segment.valid ) {
-            graph.emplace_back ( segment.id, points, successors, predecessors,  2 * robot_radius_max_ / mapResolution_ ); //segment.width);
+            graph.emplace_back ( segment.id, points, successors, predecessors,  segment.width, segment.restricted_access); //segment.width);
         } else {
             graph.emplace_back ( segment.id, points, successors, predecessors, 0 );
         }
@@ -690,6 +690,9 @@ void Router_Node::publish() {
 
             seg.segment_id = cp.segId;
             seg.width = graph_[cp.segId].width() * mapResolution_;
+
+            // Check if there is a restricted access for the segment
+            seg.restricted_access=graph_.at(cp.segId).isRestricted();
 
             for ( int j = 0; j < cp.preconditions.size(); j++ ) {
                 tuw_multi_robot_msgs::RoutePrecondition pc;

@@ -41,10 +41,11 @@ namespace multi_robot_router
     class Segment
     {
         public:
-            Segment(const uint32_t &_id, const std::vector<Eigen::Vector2d> &_points, const std::vector<uint32_t> &_successors, const std::vector<uint32_t> &_predecessors, const float &_width);
+            Segment(const uint32_t &_id, const std::vector<Eigen::Vector2d> &_points, const std::vector<uint32_t> &_successors, const std::vector<uint32_t> &_predecessors, const float &_width, const bool & _restricted_access=false);
             uint32_t getSegmentId() const;
             float width() const;
             float length() const;
+            bool isRestricted() const;
 
             const std::vector<Eigen::Vector2d> &getPoints() const;
             const std::vector<uint32_t> &getPredecessors() const;
@@ -56,6 +57,7 @@ namespace multi_robot_router
             uint32_t segmentId_;
             float width_;
             float length_;
+            bool restricted_access_;
             std::vector<Eigen::Vector2d> points_;
             std::vector<uint32_t> predecessors_;
             std::vector<uint32_t> successors_;
