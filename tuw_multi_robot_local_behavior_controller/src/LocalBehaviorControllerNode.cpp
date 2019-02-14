@@ -334,6 +334,7 @@ void LocalBehaviorControllerNode::updatePath()
                     }
                 } else {
                     mbActionClient_->waitForServer();
+                    // mbActionClient_->sendGoal(goal, &doneCb, &activeCb, &feedbackCb);
                     mbActionClient_->sendGoal(goal);
                     last_goal_sent_ = path_.poses.back();
                 } 
@@ -357,7 +358,7 @@ void LocalBehaviorControllerNode::verifyGoalFeasibility()
             state == actionlib::SimpleClientGoalState::REJECTED)
         {
             move_base_msgs::MoveBaseGoal newGoal;
-            goalFinder_->findNewGoal(last_goal_sent_, newGoal.target_pose);
+            goalFinder_->findNewGoal(1, last_goal_sent_, newGoal.target_pose);
             mbActionClient_->sendGoal(newGoal);
             last_goal_sent_ = newGoal.target_pose;
         }

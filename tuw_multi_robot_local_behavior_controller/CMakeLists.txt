@@ -1,8 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(tuw_multi_robot_local_behavior_controller)
 
-## Compile as C++11, supported in ROS Kinetic and newer
-add_compile_options(-std=c++17)
+set(GCC_COVERAGE_COMPILE_FLAGS "-O3 -march=native -w") #  -Og -g -w
 
 set(DEPS
   geometry_msgs
@@ -148,6 +147,9 @@ add_library(${PROJECT_NAME}
   src/RobotStateObserver.cpp
   src/RouteProgressMonitor.cpp
   src/semaphore_client.cpp
+  src/GoalFinder.cpp
+  src/GoalFinderOpt.cpp
+  src/midaco.c
 )
 
 ## Add cmake target dependencies of the library
@@ -187,7 +189,7 @@ target_link_libraries(local_behavior_node
 #   ${catkin_LIBRARIES}
 # )
 
-add_executable(tuw_local_behavior_controller_node src/LocalBehaviorControllerNode.cpp src/GoalFinder.cpp)
+add_executable(tuw_local_behavior_controller_node src/LocalBehaviorControllerNode.cpp src/GoalFinder.cpp src/GoalFinderOpt.cpp src/midaco.c)
 add_dependencies(tuw_local_behavior_controller_node ${catkin_EXPORTED_TARGETS})
 target_link_libraries(tuw_local_behavior_controller_node
   ${PROJECT_NAME}
@@ -195,12 +197,12 @@ target_link_libraries(tuw_local_behavior_controller_node
   ${LIBSSH_LIBRARIES}
 )
 
-
-add_executable(${PROJECT_NAME}_gf_test test/GoalFinderTest.cpp src/GoalFinder.cpp)
-target_link_libraries(${PROJECT_NAME}_gf_test
-  ${PROJECT_NAME}
-  ${catkin_LIBRARIES}
-)
+# Old test without gtest
+# add_executable(${PROJECT_NAME}_gf_test test/GoalFinderTest.cpp src/GoalFinder.cpp)
+# target_link_libraries(${PROJECT_NAME}_gf_test
+#   ${PROJECT_NAME}
+#   ${catkin_LIBRARIES}
+# )
 
 #############
 ## Install ##
@@ -240,6 +242,20 @@ install(TARGETS tuw_local_behavior_controller_node ${PROJECT_NAME} ${PROJECT_NAM
 #############
 ## Testing ##
 #############
+
+
+# if(CATKIN_ENABLE_TESTING)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+## Add gtest based cpp test target and link libraries
+catkin_add_gtest(${PROJECT_NAME}-test
+  test/GoalFinderTest.cpp
+  )
+# endif()
+
+if(TARGET ${PROJECT_NAME}-test)
+  target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME} ${catkin_LIBRARIES})
+endif()
+
 
 ## Add gtest based cpp test target and link libraries
 # catkin_add_gtest(${PROJECT_NAME}-test test/test_tuw_multi_robot_route_to_path.cpp)
