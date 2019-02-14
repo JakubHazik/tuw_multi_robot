@@ -30,11 +30,16 @@ bool SemaphoreClient::requestAuthorization(const uint32_t & actual_segment_id, c
 
     } else {
          
-        ROS_INFO_STREAM("Request authorization for segment : " << restricted_segment_id << " ( Current segment is : " << actual_segment_id << " )");
+        ROS_DEBUG_STREAM("Request authorization for segment : " << restricted_segment_id << " ( Current segment is : " << actual_segment_id << " )");
         bool srv_call_success = lights_client_in_.call(srv);
-        if (srv_call_success)
+        if (srv_call_success) {
+            if(srv.response.ack == true)
+                ROS_INFO_STREAM_THROTTLE(1.0, "Received answer from server : True");
+            else if(srv.response.ack == false)            
+                ROS_INFO_STREAM_THROTTLE(1.0, "Received answer from server : False");
+
             return srv.response.ack;
-        else
+        } else 
             return false; 
         
     }

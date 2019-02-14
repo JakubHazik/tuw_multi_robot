@@ -3,6 +3,7 @@
 <launch>
     <arg name="cfg"  default="default" />
     <arg name="use_gdb"  default="false" />
+    <arg name="robot_id" default="robot_0" />
     
     <node pkg="tuw_multi_robot_router" type="single_robot_router_node" name="single_robot_router" output="screen">
         <remap from="map" to="world/map"/>

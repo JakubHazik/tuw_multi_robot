@@ -46,7 +46,7 @@ SingleRobotRouterNode::SingleRobotRouterNode ( ros::NodeHandle &_n ) : Router(),
     sub_map_ = n_.subscribe ( "map", 1, &SingleRobotRouterNode::mapCallback, this );
     sub_voronoi_graph_ = n_.subscribe ( "segments", 1, &SingleRobotRouterNode::graphCallback, this );
     sub_robot_goal_ = n_.subscribe ( "goal", 1, &SingleRobotRouterNode::goalCallback, this );
-    sub_odometry_ = n_.subscribe ( robot_name_ + "/odom", 1, &SingleRobotRouterNode::odometryCallback, this );
+    sub_odometry_ = n_.subscribe ( "odom", 1, &SingleRobotRouterNode::odometryCallback, this );
 
     // Static publishers
     pubPlannerStatus_ = n_.advertise<tuw_multi_robot_msgs::RouterStatus> ( "planner_status", 1 );
@@ -131,7 +131,7 @@ void SingleRobotRouterNode::odometryCallback( const nav_msgs::Odometry::ConstPtr
     if ( robot == active_robots_.end() ) {
         // Create new entry
         RobotInfoPtr robot_new = std::make_shared<RobotInfo> ( robot_info );
-        robot_new->initTopics ( n_, true );
+        robot_new->initTopics ( n_, false );
         active_robots_.push_back ( robot_new );
     } else {
         ( *robot )->updateInfo ( robot_info );

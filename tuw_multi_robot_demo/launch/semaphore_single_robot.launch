@@ -4,38 +4,66 @@
 
 <arg name="room"                                default="showroom"      />
 <arg name="cfg"                                 default="showroom"   />
-<arg name="map_name"                            default=""          />
+<arg name="map_name"                            default="map"   />
 
 <include file="$(find tuw_multi_robot_demo)/launch/stage.launch">
   <arg name="room" value="$(arg room)" />
 </include>
 
-<!-- multi robot client -->
-<include file="$(find tuw_multi_robot_demo)/launch/local_behavior.launch">
-  <arg name="robot_id" value="robot_0" />
+<!-- map server -->
+<include file="$(find tuw_multi_robot_demo)/launch/map_server.launch">
   <arg name="room" value="$(arg room)" />
-</include> 
+  <arg name="map" value="$(arg map_name)" />
+</include>
 
-<!-- robot_0 -->
-<!-- move_base -->
-<include file="$(find tuw_multi_robot_demo)/launch/move_base/move_base.launch">
-  <arg name="robot_id" value="robot_0" />
-</include> 
-
-<!-- multi robot router -->
-<include file="$(find tuw_multi_robot_demo)/launch/single_robot_router.launch">
-  <arg name="room" value="showroom" />
-  <arg name="cfg" value="showroom" />
-  <arg name="map_name" value="map" />
-</include> 
+<!-- graph -->
+<include file="$(find tuw_multi_robot_demo)/launch/graph_generator.launch">
+  <arg name="cfg" value="$(arg room)" />
+</include>
 
 <!-- start rviz -->
 <include file="$(find tuw_multi_robot_demo)/launch/start_rviz.launch">
   <arg name="room" value="$(arg room)"/> 
 </include>
 
+
+<!-- robot_0 -->
+
+<include file="$(find tuw_multi_robot_demo)/launch/single_robot_router.launch">
+  <arg name="robot_id" value="robot_0" />
+  <arg name="cfg" value="showroom" />
+</include> 
+
+<!-- multi robot client -->
+<include file="$(find tuw_multi_robot_demo)/launch/local_behavior.launch">
+  <arg name="robot_id" value="robot_0" />
+</include> 
+
+<!-- move_base -->
+<include file="$(find tuw_multi_robot_demo)/launch/move_base/move_base.launch">
+  <arg name="robot_id" value="robot_0" />
+</include> 
+
+<!-- robot_1 -->
+
+<include file="$(find tuw_multi_robot_demo)/launch/single_robot_router.launch">
+  <arg name="robot_id" value="robot_1" />
+  <arg name="cfg" value="showroom" />
+</include> 
+
+<!-- multi robot client -->
+<include file="$(find tuw_multi_robot_demo)/launch/local_behavior.launch">
+  <arg name="robot_id" value="robot_1" />
+</include> 
+
+<!-- move_base -->
+<include file="$(find tuw_multi_robot_demo)/launch/move_base/move_base.launch">
+  <arg name="robot_id" value="robot_1" />
+</include> 
+
+
 <!-- <include file="$(find stoplights_srv)/launch/stoplights_srv.launch">
-</include> --> 
+</include>  -->
 
 
 </launch>

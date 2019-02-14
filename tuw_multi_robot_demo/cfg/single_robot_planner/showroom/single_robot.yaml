@@ -1,5 +1,4 @@
 frame_id: "world"
-robot_name: "robot_0"
 robot_radius: 0.76
 single_robot_mode: true
 publish_routing_table: true
