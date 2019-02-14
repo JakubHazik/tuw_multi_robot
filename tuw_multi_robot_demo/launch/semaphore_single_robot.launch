@@ -11,8 +11,9 @@
 </include>
 
 <!-- multi robot client -->
-<include file="$(find tuw_multi_robot_demo)/launch/multi_robot_client.launch">
+<include file="$(find tuw_multi_robot_demo)/launch/local_behavior.launch">
   <arg name="robot_id" value="robot_0" />
+  <arg name="room" value="$(arg room)" />
 </include> 
 
 <!-- robot_0 -->
@@ -22,7 +23,7 @@
 </include> 
 
 <!-- multi robot router -->
-<include file="$(find tuw_multi_robot_demo)/launch/multi_robot_router.launch">
+<include file="$(find tuw_multi_robot_demo)/launch/single_robot_router.launch">
   <arg name="room" value="showroom" />
   <arg name="cfg" value="showroom" />
   <arg name="map_name" value="map" />
@@ -32,5 +33,9 @@
 <include file="$(find tuw_multi_robot_demo)/launch/start_rviz.launch">
   <arg name="room" value="$(arg room)"/> 
 </include>
+
+<!-- <include file="$(find stoplights_srv)/launch/stoplights_srv.launch">
+</include> --> 
+
 
 </launch>

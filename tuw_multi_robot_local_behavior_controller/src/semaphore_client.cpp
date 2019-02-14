@@ -9,8 +9,8 @@ SemaphoreClient::SemaphoreClient(const ros::NodeHandle & _n, const std::string &
 {
 
     // Creates client for the server services
-    lights_client_in_ = n_.serviceClient<ifollow_nav_msgs::StoplightsSys>("stoplights_sys_in");
-    lights_client_out_ = n_.serviceClient<ifollow_nav_msgs::StoplightsSys>("stoplights_sys_out");
+    lights_client_in_ = n_.serviceClient<ifollow_nav_msgs::StoplightsSys>("/stoplights_sys_in");
+    lights_client_out_ = n_.serviceClient<ifollow_nav_msgs::StoplightsSys>("/stoplights_sys_out");
 
 }
 
@@ -30,6 +30,7 @@ bool SemaphoreClient::requestAuthorization(const uint32_t & actual_segment_id, c
 
     } else {
          
+        ROS_INFO_STREAM("Request authorization for segment : " << restricted_segment_id << " ( Current segment is : " << actual_segment_id << " )");
         bool srv_call_success = lights_client_in_.call(srv);
         if (srv_call_success)
             return srv.response.ack;

@@ -100,6 +100,7 @@ void LocalBehaviorNode::updateHorizon()
         // Get segment that the robot has reached and check if we are leaving a segment
         robot_pose_route_segment_ = route_.segments.begin() + progress_monitor_.getProgress() + 1;
 
+        // If the distance between the two segments is one, then we are currently leaving a segment
         if(std::distance(previous_robot_route_segment_,robot_pose_route_segment_) == 1) {
             semaphore_client_->advertiseLeavingSegment(previous_robot_route_segment_->segment_id, 
                                                        robot_pose_route_segment_->segment_id);
@@ -115,9 +116,14 @@ void LocalBehaviorNode::updateHorizon()
                // If we are close enough, send the authorization request
                if(std::distance(robot_pose_route_segment_,last_accessible_route_segment_) <= 2) {
 
-                   if(!semaphore_client_->requestAuthorization(robot_pose_route_segment_->segment_id,
-                                                               it->segment_id)) 
-                      break;
+                   if(it != route_.segments.begin()) {
+
+                       if(!semaphore_client_->requestAuthorization((it-1)->segment_id,
+                                                                    it->segment_id)) 
+                          break;
+
+                   } else 
+                       ROS_ERROR_STREAM("Can't request access for the first segment");
 
                 } else
                     break;
@@ -280,9 +286,8 @@ void LocalBehaviorNode::subRouteCallback(const tuw_multi_robot_msgs::Route::Cons
     reset();
     // Initialize variables
     route_ = *_route;
-    last_accessible_route_segment_ = route_.segments.begin();
+    last_accessible_route_segment_ = route_.segments.begin() + 1;
     progress_monitor_.init(route_);
-    // 
     robot_pose_route_segment_ = route_.segments.begin() + progress_monitor_.getProgress() + 1;
     previous_robot_route_segment_ = route_.segments.begin() + progress_monitor_.getProgress() + 1;
     ROS_DEBUG_STREAM("Robot enter moving state");

@@ -121,6 +121,8 @@ private:
     bool got_map_ = false;
     bool got_graph_ = false;
     std::vector<Segment> graph_;
+    // FIXME : the width stored in graph is not the one evaluated by the voronoi algorithm, because it is used by the router to find closest segment, therefore an other structure is used to store the real width of the segment.
+    std::vector<double> segment_width_;
     size_t current_map_hash_;
     size_t current_graph_hash_;
     int id_;

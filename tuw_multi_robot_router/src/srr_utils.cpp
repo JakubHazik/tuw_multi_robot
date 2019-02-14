@@ -32,7 +32,7 @@
 namespace multi_robot_router
 {
 
-Segment::Segment(const uint32_t &_id, const std::vector<Eigen::Vector2d> &_points, const std::vector<uint32_t> &_successors, const std::vector<uint32_t> &_predecessors, const float &_width, const bool &_restricted_access) : points_(_points),
+Segment::Segment(const uint32_t &_id, const std::vector<Eigen::Vector2d> &_points, const std::vector<uint32_t> &_successors, const std::vector<uint32_t> &_predecessors, const float &_width) : points_(_points),
                                                                                                                                                                                                 successors_(_successors),
                                                                                                                                                                                                 predecessors_(_predecessors)
 {
@@ -40,7 +40,6 @@ Segment::Segment(const uint32_t &_id, const std::vector<Eigen::Vector2d> &_point
     width_ = _width;
     Eigen::Vector2d p = (_points.back() - _points.front());
     length_ = sqrt(p[0] * p[0] + p[1] * p[1]);
-    restricted_access_ = _restricted_access;
 }
 
 const Eigen::Vector2d &Segment::getEnd() const
@@ -80,11 +79,6 @@ float Segment::length() const
 float Segment::width() const
 {
     return width_;
-}
-
-bool Segment::isRestricted() const
-{
-    return restricted_access_;
 }
 
 Vertex::Vertex(const Segment &_seg) : predecessors_(), successors_(), segment_(_seg), potential(-1), collision(-1), crossingPredecessor(false), crossingSuccessor(false), isWaitSegment(false)

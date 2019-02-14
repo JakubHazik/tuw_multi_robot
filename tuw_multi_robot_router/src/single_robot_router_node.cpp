@@ -216,6 +216,8 @@ void SingleRobotRouterNode::mapCallback ( const nav_msgs::OccupancyGrid &_map ) 
 void SingleRobotRouterNode::graphCallback ( const tuw_multi_robot_msgs::Graph &msg ) {
     std::vector<Segment> graph;
 
+    segment_width_.clear();
+
     for ( const tuw_multi_robot_msgs::Vertex &segment : msg.vertices ) {
         std::vector<Eigen::Vector2d> points;
 
@@ -236,10 +238,13 @@ void SingleRobotRouterNode::graphCallback ( const tuw_multi_robot_msgs::Graph &m
         }
 
         if ( segment.valid ) {
-            graph.emplace_back ( segment.id, points, successors, predecessors,  2 * robot_radius_ / mapResolution_ , segment.restricted_access); 
+            graph.emplace_back ( segment.id, points, successors, predecessors,  2 * robot_radius_ / mapResolution_); 
         } else {
             graph.emplace_back ( segment.id, points, successors, predecessors, 0 );
         }
+
+        segment_width_.emplace_back ( segment.width );
+        
     }
 
     std::sort ( graph.begin(), graph.end(), sortSegments );
@@ -426,10 +431,7 @@ void SingleRobotRouterNode::publish() {
             seg.end.orientation.z = qEnd.z();
 
             seg.segment_id = cp.segId;
-            seg.width = graph_[cp.segId].width() * mapResolution_;
-
-            // Check if there is a restricted access for the segment
-            seg.restricted_access=graph_.at(cp.segId).isRestricted();
+            seg.width = segment_width_[cp.segId] * mapResolution_;
 
             for ( int j = 0; j < cp.preconditions.size(); j++ ) {
                 tuw_multi_robot_msgs::RoutePrecondition pc;

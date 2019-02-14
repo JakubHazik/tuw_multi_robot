@@ -36,7 +36,7 @@ VoronoiGeneratorNode::VoronoiGeneratorNode(ros::NodeHandle &n) : voronoi_map::Vo
 
     n_param_.param<float>("segment_length", segment_length_, 1.0); /// [meters]
 
-    n_param_.param<float>("robot_width", robot_width_, 1.0); /// [meters]
+    n_param_.param<float>("robot_width", robot_width_, 0.76); /// [meters]
 
     crossingOptimization_ = 0.2;
     n_param_.param<float>("opt_crossings", crossingOptimization_, 0.2);
@@ -197,16 +197,10 @@ void VoronoiGeneratorNode::publishSegments()
 
         seg.id = (*it).getId();
         seg.weight = (*it).getLength();
-        seg.width = (*it).getMinPathSpace();
+        // FIXME 
+        seg.width = robot_width_ * 1.20 / resolution_; // (*it).getMinPathSpace();
         seg.valid = true;
         std::vector<Eigen::Vector2d> path = (*it).getPath();
-
-        // Robots need space to travel
-        if(seg.width > 2*robot_width_) {
-            seg.restricted_access=false; 
-        } else {
-            seg.restricted_access=true;
-        }
 
         for (uint32_t i = 0; i < path.size(); i++)
         {
