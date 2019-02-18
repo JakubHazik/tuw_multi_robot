@@ -70,8 +70,8 @@ int RouteProgressMonitor::getProgress () {
 void RouteProgressMonitor::updateProgress ( const tuw::Point2D p ) {
     // Compute distance to segment 
     for ( auto segment: segments_ ) {
-        segment->distance = segment->l.distanceTo ( p );
-        segment->distance = p.distanceTo(segment->l.p1());
+        //segment->distance = segment->l.distanceTo ( p );
+        segment->distance = p.distanceTo(segment->l.p0());
     }
  
     if ( segments_.empty() ) {
