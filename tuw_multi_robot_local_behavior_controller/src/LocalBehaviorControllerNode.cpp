@@ -38,7 +38,8 @@ int main ( int argc, char **argv ) {
 
 namespace tuw_multi_robot_route_to_path {
 LocalBehaviorControllerNode::LocalBehaviorControllerNode ( ros::NodeHandle &n )
-    : n_ ( n ), n_param_ ( "~" ) {
+        : n_(n), n_param_("~"), client(n, "execute_path")
+{
     robot_step_ = -1;
     route_ = tuw_multi_robot_msgs::Route();
     path_segment_end = 0;
@@ -57,11 +58,11 @@ LocalBehaviorControllerNode::LocalBehaviorControllerNode ( ros::NodeHandle &n )
 
     subCtrlState_ = n.subscribe<tuw_nav_msgs::ControllerState> ( "state_trajectory_ctrl", 1,  &LocalBehaviorControllerNode::subCtrlCb, this );
     subPose_ = n.subscribe<geometry_msgs::PoseWithCovarianceStamped> ( "pose", 1,  &LocalBehaviorControllerNode::subPoseCb, this );
-    subRobotInfo_ = n.subscribe<tuw_multi_robot_msgs::RobotInfo> ( "/robot_info", 10000, &LocalBehaviorControllerNode::subRobotInfoCb, this );
+    subRobotInfo_ = n.subscribe<tuw_multi_robot_msgs::RobotInfo> ( "robot_info", 10000, &LocalBehaviorControllerNode::subRobotInfoCb, this );
 
     subRoute_ = n.subscribe<tuw_multi_robot_msgs::Route> ( "route", 1, &LocalBehaviorControllerNode::subRouteCb, this );
 
-    pubRobotInfo_ = n.advertise<tuw_multi_robot_msgs::RobotInfo> ( "/robot_info", 10000 );
+    pubRobotInfo_ = n.advertise<tuw_multi_robot_msgs::RobotInfo> ( "robot_info", 10000 );
     pubPath_ = n.advertise<nav_msgs::Path> ( "path", 1 );
 
 
@@ -119,7 +120,11 @@ void LocalBehaviorControllerNode::updatePath() {
             pose_stamped.pose = route_.segments[i].end;
             path_.poses.push_back(pose_stamped);            
         }
-        pubPath_.publish(path_);        
+
+        tuw_local_controller_msgs::ExecutePathGoal goal;
+        goal.path = path_;
+        pubPath_.publish(path_);
+        client.sendGoal(goal);
     }
     
 }

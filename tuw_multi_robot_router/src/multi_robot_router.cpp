@@ -41,7 +41,7 @@ namespace multi_robot_router
         robotDiameter_ = _robotDiameter;
         route_coordinator_ = &rct_;
     }
-
+    
     MultiRobotRouter::MultiRobotRouter(const uint32_t _nr_robots) :  RouteGenerator(), priority_scheduler_(_nr_robots), speed_scheduler_(_nr_robots)
     {
         setRobotNr(_nr_robots);
@@ -135,7 +135,7 @@ namespace multi_robot_router
                     }
                 }
                 found = planPaths(priorityList, speedList, _startSegments, _goalSegments, firstSchedule, routeCandidates, lastPlannedRobot);
-
+            
                 speedScheduleAttempts_++;
                 std::chrono::time_point<std::chrono::high_resolution_clock>  tgoal = std::chrono::high_resolution_clock::now();
                 duration = std::chrono::duration_cast<std::chrono::milliseconds>(tgoal - tstart).count();
@@ -168,26 +168,13 @@ namespace multi_robot_router
             found = false;
             _robot = _priorityList[i];
 
-            // route_coordinator_->setActive(_robot);
+            //route_coordinator_->setActive(_robot);
 
             RouteCoordinatorWrapper rcWrapper(_robot, *route_coordinator_);
-            // Worst case scenario: Search whole graph once + n * (move through whole graph to avoid other robot) -> graph.size() * (i+1) iterations
+            //Worst case scenario: Search whole graph once + n * (move through whole graph to avoid other robot) -> graph.size() * (i+1) iterations
             if(!srr.getRouteCandidate(_startSegments[_robot], _goalSegments[_robot], rcWrapper, robotDiameter_[_robot], _speedList[_robot], _routeCandidates[_robot], maxIterationsSingleRobot_ * (i + 1)))
             {
-                // DEBUG
-                /* ROS_INFO("Failed route");
-                for(auto it=_routeCandidates[_robot].begin();it!=_routeCandidates[_robot].end();it++) {
-                  if(it->direction==RouteVertex::path_direction::start_to_end) {
-                    ROS_INFO("Robot %d : segment start (%f,%f)",_robot,it->getSegment().getStart()[0]*0.05,it->getSegment().getStart()[1]*0.05);
-                    ROS_INFO("Robot %d : segment end (%f,%f)",_robot,it->getSegment().getEnd()[0]*0.05,it->getSegment().getEnd()[1]*0.05);
-                  } else if(it->direction==RouteVertex::path_direction::end_to_start) {
-                    ROS_INFO("Robot %d : segment start (%f,%f)",_robot,it->getSegment().getEnd()[0]*0.05,it->getSegment().getEnd()[1]*0.05);
-                    ROS_INFO("Robot %d : segment end (%f,%f)",_robot,it->getSegment().getStart()[0]*0.05,it->getSegment().getStart()[1]*0.05);
-                  } else {
-                    ROS_INFO("None");
-                  }
-                }
-                ROS_INFO("Failed Robot"); */
+                //ROS_INFO("Failed Robot");
                 robotCollisions_[_robot] = srr.getRobotCollisions();
                 robotCollisions_[_robot].resize(nr_robots_, 0);
                 break;
@@ -195,12 +182,6 @@ namespace multi_robot_router
 
             robotCollisions_[_robot] = srr.getRobotCollisions();
             robotCollisions_[_robot].resize(nr_robots_, 0);
-
-            // DEBUG
-            /*for(auto it=_routeCandidates[_robot].begin();it!=_routeCandidates[_robot].end();it++) {
-              ROS_INFO("Robot %d : segment start (%f,%f)",_robot,it->getSegment().getStart()[0]*0.05,it->getSegment().getStart()[1]*0.05);
-              ROS_INFO("Robot %d : segment end (%f,%f)",_robot,it->getSegment().getEnd()[0]*0.05,it->getSegment().getEnd()[1]*0.05);
-            }*/
 
             if(!route_coordinator_->addRoute(_routeCandidates[_robot], robotDiameter_[_robot], _robot))
             {
@@ -224,5 +205,7 @@ namespace multi_robot_router
         useSpeedRescheduler_ = _status;
     }
 
-
+    
 }
+
+

@@ -1,5 +1,0 @@
-<?xml version="1.0"?>
-
-<launch>
-    <node pkg="rostopic" type="rostopic" name="goals_publisher" args="pub -l /goals tuw_multi_robot_msgs/RobotGoalsArray -f $(find tuw_multi_robot_demo)/launch/utils/goals_warehouse_5.yaml"/>
-</launch>

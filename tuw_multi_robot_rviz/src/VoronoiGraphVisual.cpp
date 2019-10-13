@@ -73,9 +73,7 @@ void VoronoiGraphVisual::setMessage(const tuw_multi_robot_msgs::Graph::ConstPtr 
     timeOld_ = msg->header.stamp.toSec();
 
     pathLine.resize(msg->vertices.size());
-    segmentLabel.resize(pathLine.size());
     crossingShape.resize(pathLine.size() * 2);
-
     for (size_t i = 0; i < pathLine.size(); ++i)
     {
         tuw_multi_robot_msgs::Vertex seg = msg->vertices[i];
@@ -93,29 +91,20 @@ void VoronoiGraphVisual::setMessage(const tuw_multi_robot_msgs::Graph::ConstPtr 
 
         pathLine[i].reset(new rviz::Line(scene_manager_, frame_node_));
         pathLine[i]->setColor(colorPath_);
-        pathLine[i]->setPoints(Ogre::Vector3((p1.x) * msg->resolution + msg->origin.position.x, (p1.y) * msg->resolution + msg->origin.position.y, p1.z * msg->resolution + msg->origin.position.z), Ogre::Vector3((p2.x) * msg->resolution + msg->origin.position.x, (p2.y) * msg->resolution + msg->origin.position.y, p2.z * msg->resolution + msg->origin.position.z));
+        pathLine[i]->setPoints(Ogre::Vector3((p1.x)  + msg->origin.position.x, (p1.y)  + msg->origin.position.y, p1.z  + msg->origin.position.z), Ogre::Vector3((p2.x)  + msg->origin.position.x, (p2.y)  + msg->origin.position.y, p2.z  + msg->origin.position.z));
         pathLine[i]->setScale(Ogre::Vector3(scalePath_, scalePath_, scalePath_));
 
         crossingShape[2 * i].reset(new rviz::Shape(rviz::Shape::Sphere, scene_manager_, frame_node_));
         crossingShape[2 * i]->setColor(colorPath_);
-        crossingShape[2 * i]->setPosition(Ogre::Vector3((p1.x) * msg->resolution + msg->origin.position.x, (p1.y) * msg->resolution + msg->origin.position.y, p1.z * msg->resolution + msg->origin.position.z));
+        crossingShape[2 * i]->setPosition(Ogre::Vector3((p1.x)  + msg->origin.position.x, (p1.y)  + msg->origin.position.y, p1.z  + msg->origin.position.z));
         crossingShape[2 * i]->setOrientation(rotation * rotation2);
         crossingShape[2 * i]->setScale(Ogre::Vector3(scalePoint_, scalePoint_, scalePoint_));
 
         crossingShape[2 * i + 1].reset(new rviz::Shape(rviz::Shape::Sphere, scene_manager_, frame_node_));
         crossingShape[2 * i + 1]->setColor(colorPath_);
-        crossingShape[2 * i + 1]->setPosition(Ogre::Vector3((p2.x) * msg->resolution + msg->origin.position.x, (p2.y) * msg->resolution + msg->origin.position.y, p2.z * msg->resolution + msg->origin.position.z));
+        crossingShape[2 * i + 1]->setPosition(Ogre::Vector3((p2.x)  + msg->origin.position.x, (p2.y)  + msg->origin.position.y, p2.z  + msg->origin.position.z));
         crossingShape[2 * i + 1]->setOrientation(rotation * rotation2);
         crossingShape[2 * i + 1]->setScale(Ogre::Vector3(scalePoint_, scalePoint_, scalePoint_));
-        
-        // Add a label to the segment        
-        segmentLabel[i].reset(new TextVisual(scene_manager_, frame_node_));
-        segmentLabel[i]->setColor(colorPath_);
-        segmentLabel[i]->setPosition(Ogre::Vector3(((p1.x) * msg->resolution + msg->origin.position.x+ (p2.x) * msg->resolution + msg->origin.position.x)/2,
-                                     ((p1.y) * msg->resolution + msg->origin.position.y + (p2.y) * msg->resolution + msg->origin.position.y)/2,
-                                      p1.z * msg->resolution + msg->origin.position.z));
-        segmentLabel[i]->setCaption(std::to_string(seg.id));
-        
     }
 }
 
