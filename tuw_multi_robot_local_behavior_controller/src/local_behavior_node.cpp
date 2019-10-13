@@ -5,6 +5,7 @@
 #include <libssh/libssh.h>
 #include <algorithm>
 #include <pose_cov_ops/pose_cov_ops.h>
+#include <memory>
 
 int main ( int argc, char **argv ) {
 

@@ -49,9 +49,13 @@ namespace tuw_multi_robot_route_to_path
         // Callbacks
         void subRobotOdometryCallback(const nav_msgs::Odometry::ConstPtr& _odom);
         void subRouteCallback(const tuw_multi_robot_msgs::Route::ConstPtr& _route);
-        
+        void checkSegmentTransition();
+        bool checkRestrictedSegment( const tuw_multi_robot_msgs::RouteSegment & _seg );
+        geometry_msgs::Quaternion computeSegmentOrientation( const tuw_multi_robot_msgs::RouteSegment & _seg );
+
         // ROS parameters
         double update_rate_;
+        int dist_to_restricted_segment_;
         std::string frame_id_;
         std::string robot_name_;
         double robot_width_;

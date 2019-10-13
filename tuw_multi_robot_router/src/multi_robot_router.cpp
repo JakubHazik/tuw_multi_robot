@@ -156,7 +156,9 @@ namespace multi_robot_router
         return found;
     }
 
-    bool MultiRobotRouter::planPaths(const std::vector<uint32_t> &_priorityList, const std::vector<float> &_speedList, const std::vector<uint32_t> &_startSegments, const std::vector<uint32_t> &_goalSegments, const uint32_t _firstSchedule, std::vector<std::vector<RouteVertex>> &_routeCandidates, uint32_t &_robot)
+    bool MultiRobotRouter::planPaths(const std::vector<uint32_t> &_priorityList, const std::vector<float> &_speedList,
+            const std::vector<uint32_t> &_startSegments, const std::vector<uint32_t> &_goalSegments,
+            const uint32_t _firstSchedule, std::vector<std::vector<RouteVertex>> &_routeCandidates, uint32_t &_robot)
     {
         bool found = false;
 

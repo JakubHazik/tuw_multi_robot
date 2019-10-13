@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(tuw_multi_robot_local_behavior_controller)
 
 set(GCC_COVERAGE_COMPILE_FLAGS "-O3 -march=native -w") #  -Og -g -w
+set (CMAKE_CXX_STANDARD 14)
 
 set(DEPS
   geometry_msgs
